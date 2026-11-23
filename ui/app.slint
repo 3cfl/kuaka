@@ -1,0 +1,495 @@
+export struct Pkg {
+    name: string,
+    old: string,
+    new: string,
+}
+
+export struct Group {
+    kind: string,
+    title: string,
+    note: string,
+    items: [Pkg],
+}
+
+export struct NewsCard {
+    title: string,
+    body: string,
+    link: string,
+    warn: bool,
+}
+
+export struct Change {
+    number: int,
+    date: string,
+    what: string,
+}
+
+global Theme {
+    out property <color> bg: #101113;
+    out property <color> panel: #15161a;
+    out property <color> raised: #1b1d21;
+    out property <color> hover: #212328;
+    out property <color> line: #25272c;
+    out property <color> line-strong: #383b41;
+    out property <color> text: #e9eaec;
+    out property <color> muted: #9b9fa7;
+    out property <color> faint: #686c74;
+    out property <color> accent: #8ec5ff;
+    out property <color> accent-ink: #0a1f33;
+    out property <color> warn: #ffc27a;
+    out property <color> danger: #ff8f85;
+    out property <length> radius: 8px;
+    out property <string> mono: "JetBrains Mono";
+}
+
+component FButton inherits Rectangle {
+    in property <string> text;
+    in property <string> kind: "primary";
+    in property <bool> enabled: true;
+    callback clicked;
+    height: 38px;
+    min-width: label.preferred-width + 36px;
+    border-radius: Theme.radius;
+    border-width: kind == "ghost" ? 1px : 0px;
+    border-color: Theme.line-strong;
+    opacity: enabled ? 1 : 0.4;
+    background: kind == "primary"
+        ? (touch.pressed && enabled ? Theme.accent.darker(0.15) : touch.has-hover && enabled ? Theme.accent.brighter(0.08) : Theme.accent)
+        : (touch.has-hover && enabled ? Theme.hover : transparent);
+    animate background { duration: 140ms; }
+    label := Text {
+        text: root.text;
+        color: root.kind == "primary" ? Theme.accent-ink : Theme.text;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    touch := TouchArea {
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => {
+            if (root.enabled) {
+                root.clicked();
+            }
+        }
+    }
+}
+
+component Tab inherits Rectangle {
+    in property <string> text;
+    in property <bool> active;
+    callback clicked;
+    height: 34px;
+    min-width: t.preferred-width + 28px;
+    border-radius: Theme.radius;
+    background: active ? Theme.raised : touch.has-hover ? Theme.panel : transparent;
+    animate background { duration: 140ms; }
+    t := Text {
+        text: root.text;
+        color: root.active ? Theme.text : Theme.muted;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component Card inherits Rectangle {
+    background: Theme.panel;
+    border-radius: Theme.radius + 2px;
+    border-width: 1px;
+    border-color: Theme.line;
+}
+
+component GroupCard inherits Card {
+    in property <Group> group;
+    in property <bool> busy;
+    callback aur();
+    in-out property <bool> open: false;
+    VerticalLayout {
+        padding: 18px;
+        spacing: 10px;
+        HorizontalLayout {
+            spacing: 12px;
+            VerticalLayout {
+                spacing: 3px;
+                alignment: center;
+                Text {
+                    text: root.group.title;
+                    color: Theme.text;
+                    font-size: 15px;
+                    font-weight: 600;
+                }
+                Text {
+                    text: root.group.note;
+                    color: Theme.muted;
+                    font-size: 13px;
+                    wrap: word-wrap;
+                }
+            }
+            if root.group.kind == "aur": FButton {
+                text: "Update in terminal";
+                kind: "ghost";
+                enabled: !root.busy;
+                clicked => { root.aur(); }
+            }
+            FButton {
+                text: root.open ? "Hide" : "Show " + root.group.items.length;
+                kind: "ghost";
+                clicked => { root.open = !root.open; }
+            }
+        }
+        if root.open: VerticalLayout {
+            spacing: 0px;
+            for p[i] in root.group.items: Rectangle {
+                height: 30px;
+                border-radius: 6px;
+                background: Math.mod(i, 2) == 0 ? Theme.raised.transparentize(0.5) : transparent;
+                HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    spacing: 12px;
+                    Text {
+                        text: p.name;
+                        color: Theme.text;
+                        font-size: 13px;
+                        vertical-alignment: center;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+                    Text {
+                        text: p.old == "" ? p.new : p.old + "  →  " + p.new;
+                        color: Theme.faint;
+                        font-family: Theme.mono;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                        horizontal-alignment: right;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+                }
+            }
+        }
+    }
+}
+
+component NewsView inherits Card {
+    in property <NewsCard> item;
+    callback open(string);
+    border-color: item.warn ? Theme.warn.transparentize(0.55) : Theme.line;
+    VerticalLayout {
+        padding: 18px;
+        spacing: 6px;
+        Text {
+            text: root.item.warn ? "Read before updating" : "What's new";
+            color: root.item.warn ? Theme.warn : Theme.accent;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        Text {
+            text: root.item.title;
+            color: Theme.text;
+            font-size: 15px;
+            font-weight: 600;
+            wrap: word-wrap;
+        }
+        if root.item.body != "": Text {
+            text: root.item.body;
+            color: Theme.muted;
+            font-size: 13px;
+            wrap: word-wrap;
+        }
+        if root.item.link != "": HorizontalLayout {
+            alignment: start;
+            Text {
+                text: "Read more";
+                color: Theme.accent;
+                font-size: 13px;
+                font-weight: 500;
+                TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.open(root.item.link); }
+                }
+            }
+        }
+    }
+}
+
+export component App inherits Window {
+    title: "Kuaka";
+    preferred-width: 880px;
+    preferred-height: 660px;
+    min-width: 560px;
+    min-height: 460px;
+    background: Theme.bg;
+    default-font-family: "Inter";
+
+    in property <string> release;
+    in property <string> headline: "Checking for updates";
+    in property <string> subline;
+    in property <bool> checking: true;
+    in property <bool> busy;
+    in property <bool> can-update;
+    in property <bool> restart-needed;
+    in property <float> progress;
+    in property <string> step;
+    in property <string> log-text;
+    in property <string> error;
+    in property <[Group]> groups;
+    in property <[NewsCard]> news;
+    in property <[Change]> history;
+    in property <string> history-note;
+    in-out property <int> tab: 0;
+    in-out property <int> confirm: -1;
+
+    callback check();
+    callback update();
+    callback aur();
+    callback undo(int);
+    callback restart();
+    callback open(string);
+
+    VerticalLayout {
+        HorizontalLayout {
+            padding-left: 24px;
+            padding-right: 24px;
+            padding-top: 18px;
+            padding-bottom: 14px;
+            spacing: 6px;
+            Text {
+                text: "Kuaka";
+                color: Theme.text;
+                font-size: 19px;
+                font-weight: 700;
+                vertical-alignment: center;
+            }
+            Rectangle { width: 14px; }
+            Tab {
+                text: "Updates";
+                active: root.tab == 0;
+                clicked => { root.tab = 0; }
+            }
+            Tab {
+                text: "History";
+                active: root.tab == 1;
+                clicked => { root.tab = 1; }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            Text {
+                text: root.release == "" ? "" : "Fiordland " + root.release;
+                color: Theme.faint;
+                font-size: 13px;
+                vertical-alignment: center;
+            }
+        }
+        Rectangle {
+            height: 1px;
+            background: Theme.line;
+        }
+
+        if root.tab == 0: Flickable {
+            vertical-stretch: 1;
+            content-height: upd.preferred-height;
+            upd := VerticalLayout {
+                width: parent.width;
+                padding: 24px;
+                spacing: 14px;
+                alignment: start;
+
+                if root.restart-needed: Card {
+                    border-color: Theme.accent.transparentize(0.5);
+                    HorizontalLayout {
+                        padding: 16px;
+                        spacing: 12px;
+                        Text {
+                            text: "Restart to finish updating. The new kernel is ready, and new devices and drivers won't load until you restart.";
+                            color: Theme.text;
+                            font-size: 14px;
+                            wrap: word-wrap;
+                            vertical-alignment: center;
+                            horizontal-stretch: 1;
+                        }
+                        FButton {
+                            text: "Restart now";
+                            enabled: !root.busy;
+                            clicked => { root.restart(); }
+                        }
+                    }
+                }
+
+                VerticalLayout {
+                    spacing: 4px;
+                    padding-top: 6px;
+                    Text {
+                        text: root.headline;
+                        color: Theme.text;
+                        font-size: 28px;
+                        font-weight: 600;
+                        wrap: word-wrap;
+                    }
+                    Text {
+                        text: root.subline;
+                        color: Theme.muted;
+                        font-size: 14px;
+                        wrap: word-wrap;
+                    }
+                }
+
+                if root.error != "": Text {
+                    text: root.error;
+                    color: Theme.danger;
+                    font-size: 14px;
+                    wrap: word-wrap;
+                }
+
+                HorizontalLayout {
+                    spacing: 10px;
+                    alignment: start;
+                    FButton {
+                        text: root.busy ? "Updating" : "Update now";
+                        enabled: root.can-update && !root.busy && !root.checking;
+                        clicked => { root.update(); }
+                    }
+                    FButton {
+                        text: root.checking ? "Checking" : "Check again";
+                        kind: "ghost";
+                        enabled: !root.busy && !root.checking;
+                        clicked => { root.check(); }
+                    }
+                }
+
+                if root.busy || root.log-text != "": Card {
+                    VerticalLayout {
+                        padding: 16px;
+                        spacing: 10px;
+                        HorizontalLayout {
+                            Text {
+                                text: root.step;
+                                color: Theme.text;
+                                font-size: 14px;
+                                overflow: elide;
+                                horizontal-stretch: 1;
+                            }
+                            Text {
+                                text: root.busy ? Math.round(root.progress * 100) + "%" : "";
+                                color: Theme.muted;
+                                font-size: 13px;
+                            }
+                        }
+                        Rectangle {
+                            height: 6px;
+                            border-radius: 3px;
+                            background: Theme.raised;
+                            Rectangle {
+                                x: 0;
+                                width: parent.width * clamp(root.progress, 0, 1);
+                                height: parent.height;
+                                border-radius: 3px;
+                                background: Theme.accent;
+                                animate width { duration: 260ms; }
+                            }
+                        }
+                        Rectangle {
+                            height: 150px;
+                            border-radius: 6px;
+                            background: #0b0c0e;
+                            clip: true;
+                            Text {
+                                x: 12px;
+                                y: parent.height - self.height - 10px;
+                                width: parent.width - 24px;
+                                text: root.log-text;
+                                color: Theme.faint;
+                                font-family: Theme.mono;
+                                font-size: 11px;
+                                wrap: word-wrap;
+                            }
+                        }
+                    }
+                }
+
+                for n in root.news: NewsView {
+                    item: n;
+                    open(link) => { root.open(link); }
+                }
+
+                for g in root.groups: GroupCard {
+                    group: g;
+                    busy: root.busy;
+                    aur => { root.aur(); }
+                }
+            }
+        }
+
+        if root.tab == 1: Flickable {
+            vertical-stretch: 1;
+            content-height: hist.preferred-height;
+            hist := VerticalLayout {
+                width: parent.width;
+                padding: 24px;
+                spacing: 10px;
+                alignment: start;
+                Text {
+                    text: "History";
+                    color: Theme.text;
+                    font-size: 28px;
+                    font-weight: 600;
+                }
+                Text {
+                    text: root.history-note;
+                    color: Theme.muted;
+                    font-size: 14px;
+                    wrap: word-wrap;
+                }
+                Rectangle { height: 6px; }
+                for c in root.history: Card {
+                    VerticalLayout {
+                        padding: 14px;
+                        spacing: 10px;
+                        HorizontalLayout {
+                            spacing: 14px;
+                            Text {
+                                text: c.date;
+                                color: Theme.faint;
+                                font-family: Theme.mono;
+                                font-size: 12px;
+                                vertical-alignment: center;
+                                width: 130px;
+                            }
+                            Text {
+                                text: c.what;
+                                color: Theme.text;
+                                font-size: 14px;
+                                vertical-alignment: center;
+                                overflow: elide;
+                                horizontal-stretch: 1;
+                            }
+                            FButton {
+                                text: "Undo";
+                                kind: "ghost";
+                                enabled: !root.busy;
+                                clicked => { root.confirm = root.confirm == c.number ? -1 : c.number; }
+                            }
+                        }
+                        if root.confirm == c.number: HorizontalLayout {
+                            spacing: 12px;
+                            Text {
+                                text: "Go back to how the system was before this change? Your files and settings in your home folder are kept. This takes effect after a restart.";
+                                color: Theme.muted;
+                                font-size: 13px;
+                                wrap: word-wrap;
+                                vertical-alignment: center;
+                                horizontal-stretch: 1;
+                            }
+                            FButton {
+                                text: "Restore";
+                                enabled: !root.busy;
+                                clicked => { root.undo(c.number); }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

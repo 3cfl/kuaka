@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Kuaka update checker
+Exec=kuaka --tray
+Icon=system-software-update
+NoDisplay=true
+X-GNOME-Autostart-Delay=60
+X-KDE-autostart-phase=2

@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+exec 2>&1
+export LC_ALL=C
+case "${1:-}" in
+  upgrade)
+    [ $# -eq 1 ] || exit 2
+    if [ -e /var/lib/pacman/db.lck ] && ! pgrep -x pacman >/dev/null; then
+      rm -f /var/lib/pacman/db.lck
+    fi
+    exec pacman -Syu --noconfirm
+    ;;
+  rollback)
+    [ $# -eq 2 ] && [[ $2 =~ ^[0-9]+$ ]] || exit 2
+    exec fiordland-rollback -y "$2"
+    ;;
+  *)
+    exit 2
+    ;;
+esac

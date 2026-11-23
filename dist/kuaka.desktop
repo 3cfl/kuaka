@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Kuaka
+GenericName=Updates
+Comment=Keep Fiordland up to date
+Exec=kuaka
+Icon=system-software-update
+Categories=System;Settings;PackageManager;
+Keywords=update;upgrade;snapshot;rollback;

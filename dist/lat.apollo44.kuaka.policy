@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Fiordland Linux</vendor>
+  <vendor_url>https://fiordland.apollo44.lat</vendor_url>
+  <action id="lat.apollo44.kuaka.helper">
+    <description>Update the system or restore a snapshot</description>
+    <message>Kuaka needs your password to change the system</message>
+    <icon_name>system-software-update</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/kuaka/kuaka-helper</annotate>
+  </action>
+</policyconfig>
