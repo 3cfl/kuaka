@@ -223,8 +223,8 @@ fn main() -> anyhow::Result<()> {
         _ => {}
     }
 
-    let _ = slint::set_xdg_app_id("kuaka");
     let ui = App::new()?;
+    let _ = slint::set_xdg_app_id("kuaka");
     let weak = ui.as_weak();
 
     ui.on_check({
