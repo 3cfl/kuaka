@@ -10,7 +10,11 @@ pub enum Event {
     Log(String),
 }
 
-fn stream(mut cmd: Command, on: &dyn Fn(Event), parse: &dyn Fn(&str) -> Option<(String, f32)>) -> Result<()> {
+fn stream(
+    mut cmd: Command,
+    on: &dyn Fn(Event),
+    parse: &dyn Fn(&str) -> Option<(String, f32)>,
+) -> Result<()> {
     let mut child = cmd
         .env("LC_ALL", "C")
         .stdin(Stdio::null())
@@ -56,7 +60,11 @@ fn pacman_line(line: &str) -> Option<(String, f32)> {
         "checking" | "loading" => return None,
         _ => ("Preparing", 0.05, 0.2),
     };
-    let label = if name.is_empty() { label.to_string() } else { format!("{label} {name}") };
+    let label = if name.is_empty() {
+        label.to_string()
+    } else {
+        format!("{label} {name}")
+    };
     Some((label, base + span * a / b.max(1.0)))
 }
 
@@ -103,7 +111,14 @@ pub fn terminal(cmd: &[&str]) -> Result<()> {
         ("xfce4-terminal", "-x"),
         ("xterm", "-e"),
     ] {
-        tries.push((t.into(), if flag.is_empty() { vec![] } else { vec![flag.into()] }));
+        tries.push((
+            t.into(),
+            if flag.is_empty() {
+                vec![]
+            } else {
+                vec![flag.into()]
+            },
+        ));
     }
     for (t, flag) in tries {
         let ok = Command::new(&t)

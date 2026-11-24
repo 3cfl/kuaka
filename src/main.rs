@@ -35,7 +35,8 @@ fn groups(p: &data::Pending) -> Vec<Group> {
     add(
         "pacman",
         "System",
-        "Fiordland, Arch and CachyOS packages. A snapshot is taken first, so this can be undone.".into(),
+        "Fiordland, Arch and CachyOS packages. A snapshot is taken first, so this can be undone."
+            .into(),
         &p.pacman,
     );
     add(
@@ -63,7 +64,10 @@ fn headline(p: &data::Pending) -> (String, String) {
     let n = p.pacman.as_ref().map_or(0, Vec::len) + p.flatpak.as_ref().map_or(0, Vec::len);
     let aur = p.aur.as_ref().map_or(0, Vec::len);
     match (n, aur) {
-        (0, 0) => ("Fiordland is up to date".into(), "Nothing to install right now.".into()),
+        (0, 0) => (
+            "Fiordland is up to date".into(),
+            "Nothing to install right now.".into(),
+        ),
         (0, a) => (
             tray::plural(a),
             "Only AUR packages have updates. Update them in a terminal.".into(),
@@ -86,7 +90,11 @@ fn check(ui: Weak<App>) {
         let news = data::news(&p);
         let restart = data::restart_needed();
         let history = data::history();
-        let release = p.release.clone().filter(|r| !r.is_empty()).unwrap_or_else(data::release);
+        let release = p
+            .release
+            .clone()
+            .filter(|r| !r.is_empty())
+            .unwrap_or_else(data::release);
         let _ = ui.upgrade_in_event_loop(move |ui| {
             let (h, s) = headline(&p);
             ui.set_headline(h.into());
@@ -135,7 +143,11 @@ fn set_history(ui: &App, history: Vec<data::Change>) {
     )));
 }
 
-fn runner(ui: Weak<App>, job: impl FnOnce(&dyn Fn(update::Event)) -> anyhow::Result<()> + Send + 'static, done: &'static str) {
+fn runner(
+    ui: Weak<App>,
+    job: impl FnOnce(&dyn Fn(update::Event)) -> anyhow::Result<()> + Send + 'static,
+    done: &'static str,
+) {
     let _ = ui.upgrade_in_event_loop(|ui| {
         ui.set_busy(true);
         ui.set_error("".into());
@@ -151,7 +163,8 @@ fn runner(ui: Weak<App>, job: impl FnOnce(&dyn Fn(update::Event)) -> anyhow::Res
                 let ui = ui.clone();
                 match e {
                     update::Event::Status(s) => {
-                        let _ = ui.upgrade_in_event_loop(move |ui| ui.set_step(SharedString::from(s)));
+                        let _ =
+                            ui.upgrade_in_event_loop(move |ui| ui.set_step(SharedString::from(s)));
                     }
                     update::Event::Progress(p) => {
                         let _ = ui.upgrade_in_event_loop(move |ui| ui.set_progress(p));
@@ -193,7 +206,14 @@ fn main() -> anyhow::Result<()> {
         Some("--tray") => return tray::run(),
         Some("--check") => {
             let p = data::pending();
-            println!("{}", if p.failed() { "couldn't check".into() } else { tray::plural(p.total()) });
+            println!(
+                "{}",
+                if p.failed() {
+                    "couldn't check".into()
+                } else {
+                    tray::plural(p.total())
+                }
+            );
             return Ok(());
         }
         Some("--help") | Some("-h") => {
@@ -222,7 +242,11 @@ fn main() -> anyhow::Result<()> {
                     .any(|g| g.kind == kind)
             };
             let (system, apps) = (has("pacman"), has("flatpak"));
-            runner(w.clone(), move |on| update::run(system, apps, on), "Updated");
+            runner(
+                w.clone(),
+                move |on| update::run(system, apps, on),
+                "Updated",
+            );
         }
     });
     ui.on_aur(|| {
@@ -230,13 +254,23 @@ fn main() -> anyhow::Result<()> {
     });
     ui.on_undo({
         let w = weak.clone();
-        move |n| runner(w.clone(), move |on| update::rollback(n, on), "Restored. Restart to use it.")
+        move |n| {
+            runner(
+                w.clone(),
+                move |on| update::rollback(n, on),
+                "Restored. Restart to use it.",
+            )
+        }
     });
     ui.on_restart(|| {
-        let _ = std::process::Command::new("systemctl").arg("reboot").spawn();
+        let _ = std::process::Command::new("systemctl")
+            .arg("reboot")
+            .spawn();
     });
     ui.on_open(|url| {
-        let _ = std::process::Command::new("xdg-open").arg(url.as_str()).spawn();
+        let _ = std::process::Command::new("xdg-open")
+            .arg(url.as_str())
+            .spawn();
     });
 
     check(weak);

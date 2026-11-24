@@ -159,7 +159,8 @@ fn rss_items(xml: &str) -> Vec<(String, String, String, i64)> {
     use quick_xml::events::Event;
     let mut r = quick_xml::Reader::from_str(xml);
     let mut items = Vec::new();
-    let (mut title, mut link, mut desc, mut date) = (String::new(), String::new(), String::new(), 0);
+    let (mut title, mut link, mut desc, mut date) =
+        (String::new(), String::new(), String::new(), 0);
     let mut field = String::new();
     let mut inside = false;
     loop {
@@ -194,7 +195,14 @@ fn rss_items(xml: &str) -> Vec<(String, String, String, i64)> {
     items
 }
 
-fn push(field: &str, s: &str, title: &mut String, link: &mut String, desc: &mut String, date: &mut i64) {
+fn push(
+    field: &str,
+    s: &str,
+    title: &mut String,
+    link: &mut String,
+    desc: &mut String,
+    date: &mut i64,
+) {
     match field {
         "title" => title.push_str(s),
         "link" => link.push_str(s.trim()),
@@ -280,9 +288,15 @@ fn iso_epoch(s: &str) -> Option<i64> {
 
 fn rfc2822_epoch(s: &str) -> Option<i64> {
     let parts: Vec<&str> = s.split_whitespace().collect();
-    let p = if parts.first()?.ends_with(',') { &parts[1..] } else { &parts[..] };
+    let p = if parts.first()?.ends_with(',') {
+        &parts[1..]
+    } else {
+        &parts[..]
+    };
     let day: i64 = p.first()?.parse().ok()?;
-    let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    let months = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
     let mon = *p.get(1)?;
     let m = months.iter().position(|x| *x == mon)? as i64 + 1;
     let y: i64 = p.get(2)?.parse().ok()?;
@@ -362,14 +376,23 @@ mod tests {
 
     #[test]
     fn dates() {
-        assert_eq!(rfc2822_epoch("Mon, 23 Nov 2026 12:00:00 +0000"), Some(1795435200));
+        assert_eq!(
+            rfc2822_epoch("Mon, 23 Nov 2026 12:00:00 +0000"),
+            Some(1795435200)
+        );
         assert_eq!(iso_epoch("2026-11-23T07:00:00-0500"), Some(1795435200));
     }
 
     #[test]
     fn describes() {
         assert_eq!(describe("pacman -Syu"), "System update");
-        assert_eq!(describe("pacman -S --needed --noconfirm kitty"), "Installed kitty");
-        assert_eq!(describe("pacman -Rns a b c d e"), "Removed a, b, c and 2 more");
+        assert_eq!(
+            describe("pacman -S --needed --noconfirm kitty"),
+            "Installed kitty"
+        );
+        assert_eq!(
+            describe("pacman -Rns a b c d e"),
+            "Removed a, b, c and 2 more"
+        );
     }
 }
