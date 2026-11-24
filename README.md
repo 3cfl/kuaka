@@ -1,6 +1,6 @@
 # Kuaka
 
-The update app for [Fiordland Linux](https://fiordland.apollo44.lat). Shows what's waiting, updates the system and Flatpak apps in one click, and puts the system back to an earlier snapshot if an update goes wrong.
+The update app for [Fiordland Linux](https://fiordlandlinux.org). Shows what's waiting, updates the system and Flatpak apps in one click, and puts the system back to an earlier snapshot if an update goes wrong.
 
 - **Updates**: system packages (Fiordland, Arch, CachyOS), Flatpak apps, and AUR packages, grouped and counted. AUR updates open in a terminal so the build scripts can be reviewed first.
 - **News**: Fiordland release notes and Arch news that need attention before updating.

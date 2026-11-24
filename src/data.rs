@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
-const SITE: &str = "https://fiordland.apollo44.lat";
+const SITE: &str = "https://fiordlandlinux.org";
 const ARCH_NEWS: &str = "https://archlinux.org/feeds/news/";
 
 #[derive(Deserialize, Clone, Debug, Default)]

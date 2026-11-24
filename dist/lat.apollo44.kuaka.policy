@@ -3,7 +3,7 @@
  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <policyconfig>
   <vendor>Fiordland Linux</vendor>
-  <vendor_url>https://fiordland.apollo44.lat</vendor_url>
+  <vendor_url>https://fiordlandlinux.org</vendor_url>
   <action id="lat.apollo44.kuaka.helper">
     <description>Update the system or restore a snapshot</description>
     <message>Kuaka needs your password to change the system</message>
