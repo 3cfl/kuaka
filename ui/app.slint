@@ -1,19 +1,29 @@
+import { Theme, Icon, Txt, Badge, Loader, PillButton, IconButton, Card, Chip, Switch, WavyProgress, NavItem, Backdrop } from "fiord.slint";
+
+export { Theme }
+
 export struct Pkg {
     name: string,
     old: string,
     new: string,
+    size: string,
+    core: bool,
 }
 
 export struct Group {
     kind: string,
     title: string,
+    icon: string,
+    summary: string,
     note: string,
+    restart: bool,
     items: [Pkg],
 }
 
 export struct NewsCard {
+    kind: string,
     title: string,
-    body: string,
+    points: [string],
     link: string,
     warn: bool,
 }
@@ -24,148 +34,144 @@ export struct Change {
     what: string,
 }
 
-global Theme {
-    out property <color> bg: #101113;
-    out property <color> panel: #15161a;
-    out property <color> raised: #1b1d21;
-    out property <color> hover: #212328;
-    out property <color> line: #25272c;
-    out property <color> line-strong: #383b41;
-    out property <color> text: #e9eaec;
-    out property <color> muted: #9b9fa7;
-    out property <color> faint: #686c74;
-    out property <color> accent: #8ec5ff;
-    out property <color> accent-ink: #0a1f33;
-    out property <color> warn: #ffc27a;
-    out property <color> danger: #ff8f85;
-    out property <length> radius: 8px;
-    out property <string> mono: "JetBrains Mono";
+component PageFrame inherits Rectangle {
+    property <float> shown: 0;
+    opacity: shown;
+    animate opacity { duration: Theme.medium; }
+    init => {
+        self.shown = 1;
+    }
+    @children
 }
 
-component FButton inherits Rectangle {
-    in property <string> text;
-    in property <string> kind: "primary";
-    in property <bool> enabled: true;
-    callback clicked;
-    height: 38px;
-    min-width: label.preferred-width + 36px;
-    border-radius: Theme.radius;
-    border-width: kind == "ghost" ? 1px : 0px;
-    border-color: Theme.line-strong;
-    opacity: enabled ? 1 : 0.4;
-    background: kind == "primary"
-        ? (touch.pressed && enabled ? Theme.accent.darker(0.15) : touch.has-hover && enabled ? Theme.accent.brighter(0.08) : Theme.accent)
-        : (touch.has-hover && enabled ? Theme.hover : transparent);
-    animate background { duration: 140ms; }
-    label := Text {
-        text: root.text;
-        color: root.kind == "primary" ? Theme.accent-ink : Theme.text;
-        font-size: 14px;
-        font-weight: 500;
+component Scroller inherits Flickable {
+    in property <length> content: 0px;
+    content-height: max(self.height, content);
+    if self.content-height > self.height + 1px: Rectangle {
+        x: root.width - 6px;
+        y: -root.content-y - root.content-y / root.content-height * root.height + 6px;
+        width: 4px;
+        height: max(24px, root.height / root.content-height * root.height - 12px);
+        border-radius: 2px;
+        background: Theme.on-surface.with-alpha(0.18);
     }
-    touch := TouchArea {
-        mouse-cursor: root.enabled ? pointer : default;
-        clicked => {
-            if (root.enabled) {
-                root.clicked();
-            }
-        }
-    }
-}
-
-component Tab inherits Rectangle {
-    in property <string> text;
-    in property <bool> active;
-    callback clicked;
-    height: 34px;
-    min-width: t.preferred-width + 28px;
-    border-radius: Theme.radius;
-    background: active ? Theme.raised : touch.has-hover ? Theme.panel : transparent;
-    animate background { duration: 140ms; }
-    t := Text {
-        text: root.text;
-        color: root.active ? Theme.text : Theme.muted;
-        font-size: 14px;
-        font-weight: 500;
-    }
-    touch := TouchArea {
-        mouse-cursor: pointer;
-        clicked => { root.clicked(); }
-    }
-}
-
-component Card inherits Rectangle {
-    background: Theme.panel;
-    border-radius: Theme.radius + 2px;
-    border-width: 1px;
-    border-color: Theme.line;
 }
 
 component GroupCard inherits Card {
     in property <Group> group;
     in property <bool> busy;
-    callback aur();
     in-out property <bool> open: false;
+    callback aur();
     VerticalLayout {
-        padding: 18px;
-        spacing: 10px;
+        padding: 20px;
+        spacing: 12px;
         HorizontalLayout {
-            spacing: 12px;
+            spacing: 16px;
+            Rectangle {
+                width: 44px;
+                height: 44px;
+                border-radius: Theme.md;
+                background: root.group.kind == "pacman" ? Theme.primary-container : root.group.kind == "flatpak" ? Theme.tertiary-container : Theme.secondary-container;
+                Icon {
+                    name: root.group.icon;
+                    size: 24px;
+                    tint: root.group.kind == "pacman" ? Theme.on-primary-container : root.group.kind == "flatpak" ? Theme.on-tertiary-container : Theme.on-secondary-container;
+                }
+            }
             VerticalLayout {
-                spacing: 3px;
                 alignment: center;
-                Text {
+                spacing: 2px;
+                horizontal-stretch: 1;
+                Txt {
+                    role: "titleM";
                     text: root.group.title;
-                    color: Theme.text;
-                    font-size: 15px;
-                    font-weight: 600;
                 }
-                Text {
-                    text: root.group.note;
-                    color: Theme.muted;
-                    font-size: 13px;
-                    wrap: word-wrap;
+                Txt {
+                    role: "bodyM";
+                    text: root.group.summary;
+                    color: Theme.on-surface-variant;
                 }
             }
-            if root.group.kind == "aur": FButton {
-                text: "Update in terminal";
-                kind: "ghost";
-                enabled: !root.busy;
-                clicked => { root.aur(); }
+            if root.group.restart: VerticalLayout {
+                alignment: center;
+                Chip {
+                    text: "restart after";
+                    icon: "restart_alt";
+                    selected: true;
+                    tone: Theme.tertiary-container;
+                    ink: Theme.on-tertiary-container;
+                }
             }
-            FButton {
-                text: root.open ? "Hide" : "Show " + root.group.items.length;
-                kind: "ghost";
-                clicked => { root.open = !root.open; }
+            if root.group.kind == "aur": VerticalLayout {
+                alignment: center;
+                PillButton {
+                    text: "update in terminal";
+                    icon: "terminal";
+                    kind: "outlined";
+                    enabled: !root.busy;
+                    clicked => {
+                        root.aur();
+                    }
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                IconButton {
+                    icon: root.open ? "expand_less" : "expand_more";
+                    label: root.open ? "hide packages" : "show packages";
+                    clicked => {
+                        root.open = !root.open;
+                    }
+                }
             }
         }
-        if root.open: VerticalLayout {
-            spacing: 0px;
-            for p[i] in root.group.items: Rectangle {
-                height: 30px;
-                border-radius: 6px;
-                background: Math.mod(i, 2) == 0 ? Theme.raised.transparentize(0.5) : transparent;
-                HorizontalLayout {
-                    padding-left: 10px;
-                    padding-right: 10px;
-                    spacing: 12px;
-                    Text {
-                        text: p.name;
-                        color: Theme.text;
-                        font-size: 13px;
-                        vertical-alignment: center;
-                        overflow: elide;
-                        horizontal-stretch: 1;
-                    }
-                    Text {
-                        text: p.old == "" ? p.new : p.old + "  →  " + p.new;
-                        color: Theme.faint;
-                        font-family: Theme.mono;
-                        font-size: 12px;
-                        vertical-alignment: center;
-                        horizontal-alignment: right;
-                        overflow: elide;
-                        horizontal-stretch: 1;
+        if root.group.note != "": Txt {
+            role: "bodyS";
+            text: root.group.note;
+            color: Theme.on-surface-variant;
+        }
+        if root.open: Rectangle {
+            border-radius: Theme.lg;
+            background: Theme.surface-container-lowest.with-alpha(Theme.low-end ? 1.0 : 0.5);
+            VerticalLayout {
+                padding: 6px;
+                spacing: 0px;
+                for p[i] in root.group.items: Rectangle {
+                    height: 34px;
+                    border-radius: Theme.sm;
+                    background: Math.mod(i, 2) == 1 ? Theme.on-surface.with-alpha(0.03) : transparent;
+                    HorizontalLayout {
+                        padding-left: 12px;
+                        padding-right: 12px;
+                        spacing: 12px;
+                        Text {
+                            text: p.name;
+                            color: Theme.on-surface;
+                            font-size: 13px;
+                            font-weight: p.core ? 600 : 400;
+                            vertical-alignment: center;
+                            overflow: elide;
+                            horizontal-stretch: 1;
+                            min-width: 80px;
+                        }
+                        Text {
+                            text: p.old == "" ? p.new : p.old + "  →  " + p.new;
+                            color: Theme.on-surface-variant;
+                            font-family: Theme.mono;
+                            font-size: 12px;
+                            vertical-alignment: center;
+                            horizontal-alignment: right;
+                            overflow: elide;
+                            horizontal-stretch: 2;
+                        }
+                        if p.size != "": Text {
+                            text: p.size;
+                            color: Theme.outline;
+                            font-size: 12px;
+                            vertical-alignment: center;
+                            horizontal-alignment: right;
+                            width: 64px;
+                        }
                     }
                 }
             }
@@ -176,71 +182,141 @@ component GroupCard inherits Card {
 component NewsView inherits Card {
     in property <NewsCard> item;
     callback open(string);
-    border-color: item.warn ? Theme.warn.transparentize(0.55) : Theme.line;
+    tone: item.warn ? Theme.surface-container-high : Theme.surface-container;
+    border-color: item.warn ? Theme.tertiary.with-alpha(0.45) : Theme.outline-variant.with-alpha(0.6);
     VerticalLayout {
-        padding: 18px;
-        spacing: 6px;
-        Text {
-            text: root.item.warn ? "Read before updating" : "What's new";
-            color: root.item.warn ? Theme.warn : Theme.accent;
-            font-size: 12px;
-            font-weight: 600;
+        padding: 20px;
+        spacing: 8px;
+        HorizontalLayout {
+            spacing: 8px;
+            Icon {
+                name: root.item.warn ? "warning" : "newspaper";
+                size: 18px;
+                tint: root.item.warn ? Theme.tertiary : Theme.primary;
+            }
+            Txt {
+                role: "labelM";
+                text: root.item.kind == "arch" ? "read before updating" : root.item.kind == "release" ? "coming in this update" : "release notes";
+                color: root.item.warn ? Theme.tertiary : Theme.primary;
+                vertical-alignment: center;
+            }
         }
-        Text {
+        Txt {
+            role: "titleL";
             text: root.item.title;
-            color: Theme.text;
-            font-size: 15px;
-            font-weight: 600;
-            wrap: word-wrap;
         }
-        if root.item.body != "": Text {
-            text: root.item.body;
-            color: Theme.muted;
-            font-size: 13px;
-            wrap: word-wrap;
+        for pt in root.item.points: HorizontalLayout {
+            spacing: 10px;
+            Rectangle {
+                width: 6px;
+                VerticalLayout {
+                    padding-top: 8px;
+                    alignment: start;
+                    Rectangle {
+                        width: 6px;
+                        height: 6px;
+                        border-radius: 3px;
+                        background: Theme.primary;
+                    }
+                }
+            }
+            Txt {
+                role: "bodyM";
+                text: pt;
+                color: Theme.on-surface-variant;
+                horizontal-stretch: 1;
+            }
         }
         if root.item.link != "": HorizontalLayout {
             alignment: start;
-            Text {
-                text: "Read more";
-                color: Theme.accent;
-                font-size: 13px;
-                font-weight: 500;
-                TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => { root.open(root.item.link); }
+            PillButton {
+                text: "read more";
+                icon: "open_in_new";
+                kind: "text";
+                clicked => {
+                    root.open(root.item.link);
                 }
             }
         }
     }
 }
 
+component Section inherits Txt {
+    role: "labelL";
+    color: Theme.on-surface-variant;
+}
+
+component SettingRow inherits HorizontalLayout {
+    in property <string> icon;
+    in property <string> title;
+    in property <string> detail;
+    spacing: 16px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    VerticalLayout {
+        alignment: center;
+        Icon {
+            name: root.icon;
+            size: 24px;
+            tint: Theme.on-surface-variant;
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        spacing: 2px;
+        horizontal-stretch: 1;
+        Txt {
+            role: "titleS";
+            text: root.title;
+        }
+        if root.detail != "": Txt {
+            role: "bodyS";
+            text: root.detail;
+            color: Theme.on-surface-variant;
+        }
+    }
+    @children
+}
+
 export component App inherits Window {
     title: "Kuaka";
-    preferred-width: 880px;
-    preferred-height: 660px;
-    min-width: 560px;
-    min-height: 460px;
-    background: Theme.bg;
-    default-font-family: "Inter";
+    preferred-width: 1000px;
+    preferred-height: 700px;
+    min-width: 600px;
+    min-height: 480px;
+    background: Theme.surface;
+    default-font-family: Theme.font;
 
+    in property <string> version;
     in property <string> release;
-    in property <string> headline: "Checking for updates";
+    in property <string> stage: "checking";
+    in property <string> headline: "checking for updates";
     in property <string> subline;
-    in property <bool> checking: true;
-    in property <bool> busy;
     in property <bool> can-update;
+    in property <bool> has-aur;
     in property <bool> restart-needed;
+    in property <string> restart-reason;
+    in property <string> snapshot-note;
     in property <float> progress;
     in property <string> step;
     in property <string> log-text;
     in property <string> error;
+    in property <int> pending-count;
     in property <[Group]> groups;
+    in property <[NewsCard]> alerts;
+    in property <[NewsCard]> notes;
     in property <[NewsCard]> news;
     in property <[Change]> history;
     in property <string> history-note;
-    in-out property <int> tab: 0;
+    in property <string> source-note;
+    in property <string> mode-note;
+    in-out property <int> page: 0;
     in-out property <int> confirm: -1;
+    in-out property <bool> log-open: false;
+    in-out property <int> interval-hours: 6;
+    in-out property <bool> notify: true;
+    in-out property <bool> pause-battery: true;
+    in-out property <bool> pause-metered: true;
 
     callback check();
     callback update();
@@ -248,243 +324,644 @@ export component App inherits Window {
     callback undo(int);
     callback restart();
     callback open(string);
+    callback donate();
+    callback discord();
+    callback settings-changed();
 
-    VerticalLayout {
-        HorizontalLayout {
-            padding-left: 24px;
-            padding-right: 24px;
-            padding-top: 18px;
-            padding-bottom: 14px;
-            spacing: 6px;
-            Text {
-                text: "Kuaka";
-                color: Theme.text;
-                font-size: 19px;
-                font-weight: 700;
-                vertical-alignment: center;
-            }
-            Rectangle { width: 14px; }
-            Tab {
-                text: "Updates";
-                active: root.tab == 0;
-                clicked => { root.tab = 0; }
-            }
-            Tab {
-                text: "History";
-                active: root.tab == 1;
-                clicked => { root.tab = 1; }
-            }
-            Rectangle { horizontal-stretch: 1; }
-            Text {
-                text: root.release == "" ? "" : "Fiordland " + root.release;
-                color: Theme.faint;
-                font-size: 13px;
-                vertical-alignment: center;
-            }
-        }
-        Rectangle {
-            height: 1px;
-            background: Theme.line;
-        }
+    property <bool> compact: false;
+    changed width => {
+        self.compact = self.width < 780px;
+    }
+    property <bool> busy: stage == "updating";
+    property <bool> checking: stage == "checking";
 
-        if root.tab == 0: Flickable {
-            vertical-stretch: 1;
-            content-height: upd.preferred-height;
-            upd := VerticalLayout {
-                width: parent.width;
-                padding: 24px;
-                spacing: 14px;
-                alignment: start;
+    Backdrop {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+    }
 
-                if root.restart-needed: Card {
-                    border-color: Theme.accent.transparentize(0.5);
-                    HorizontalLayout {
-                        padding: 16px;
-                        spacing: 12px;
-                        Text {
-                            text: "Restart to finish updating. The new kernel is ready, and new devices and drivers won't load until you restart.";
-                            color: Theme.text;
-                            font-size: 14px;
-                            wrap: word-wrap;
-                            vertical-alignment: center;
-                            horizontal-stretch: 1;
-                        }
-                        FButton {
-                            text: "Restart now";
-                            enabled: !root.busy;
-                            clicked => { root.restart(); }
-                        }
-                    }
-                }
+    HorizontalLayout {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        padding: 12px;
+        spacing: 12px;
 
-                VerticalLayout {
-                    spacing: 4px;
-                    padding-top: 6px;
-                    Text {
-                        text: root.headline;
-                        color: Theme.text;
-                        font-size: 28px;
-                        font-weight: 600;
-                        wrap: word-wrap;
-                    }
-                    Text {
-                        text: root.subline;
-                        color: Theme.muted;
-                        font-size: 14px;
-                        wrap: word-wrap;
-                    }
-                }
-
-                if root.error != "": Text {
-                    text: root.error;
-                    color: Theme.danger;
-                    font-size: 14px;
-                    wrap: word-wrap;
-                }
-
+        Card {
+            width: root.compact ? 88px : 224px;
+            drop-shadow-blur: Theme.low-end ? 0px : 32px;
+            drop-shadow-offset-y: 12px;
+            drop-shadow-color: Theme.low-end ? transparent : #00000059;
+            VerticalLayout {
+                padding: root.compact ? 12px : 16px;
+                spacing: 6px;
                 HorizontalLayout {
-                    spacing: 10px;
+                    padding-left: root.compact ? 4px : 8px;
+                    padding-top: 6px;
+                    padding-bottom: 18px;
+                    spacing: 12px;
+                    alignment: root.compact ? center : start;
+                    Badge {
+                        icon: "system_update_alt";
+                        size: 40px;
+                        shape: "c12";
+                        fill: Theme.primary;
+                        tint: Theme.on-primary;
+                    }
+                    if !root.compact: Text {
+                        text: "kuaka";
+                        color: Theme.on-surface;
+                        font-size: 22px;
+                        font-weight: 700;
+                        letter-spacing: -0.4px;
+                        vertical-alignment: center;
+                    }
+                }
+                NavItem {
+                    icon: "download";
+                    text: "updates";
+                    compact: root.compact;
+                    selected: root.page == 0;
+                    badge: root.pending-count;
+                    clicked => {
+                        root.page = 0;
+                    }
+                }
+                NavItem {
+                    icon: "newspaper";
+                    text: "news";
+                    compact: root.compact;
+                    selected: root.page == 1;
+                    clicked => {
+                        root.page = 1;
+                    }
+                }
+                NavItem {
+                    icon: "history";
+                    text: "history";
+                    compact: root.compact;
+                    selected: root.page == 2;
+                    clicked => {
+                        root.page = 2;
+                    }
+                }
+                NavItem {
+                    icon: "settings";
+                    text: "settings";
+                    compact: root.compact;
+                    selected: root.page == 3;
+                    clicked => {
+                        root.page = 3;
+                    }
+                }
+                Rectangle {
+                    vertical-stretch: 1;
+                }
+                if !root.compact: HorizontalLayout {
+                    spacing: 8px;
                     alignment: start;
-                    FButton {
-                        text: root.busy ? "Updating" : "Update now";
-                        enabled: root.can-update && !root.busy && !root.checking;
-                        clicked => { root.update(); }
-                    }
-                    FButton {
-                        text: root.checking ? "Checking" : "Check again";
-                        kind: "ghost";
-                        enabled: !root.busy && !root.checking;
-                        clicked => { root.check(); }
-                    }
-                }
-
-                if root.busy || root.log-text != "": Card {
-                    VerticalLayout {
-                        padding: 16px;
-                        spacing: 10px;
-                        HorizontalLayout {
-                            Text {
-                                text: root.step;
-                                color: Theme.text;
-                                font-size: 14px;
-                                overflow: elide;
-                                horizontal-stretch: 1;
-                            }
-                            Text {
-                                text: root.busy ? Math.round(root.progress * 100) + "%" : "";
-                                color: Theme.muted;
-                                font-size: 13px;
-                            }
+                    Chip {
+                        text: "donate";
+                        icon: "favorite";
+                        interactive: true;
+                        clicked => {
+                            root.donate();
                         }
-                        Rectangle {
-                            height: 6px;
-                            border-radius: 3px;
-                            background: Theme.raised;
-                            Rectangle {
-                                x: 0;
-                                width: parent.width * clamp(root.progress, 0, 1);
-                                height: parent.height;
-                                border-radius: 3px;
-                                background: Theme.accent;
-                                animate width { duration: 260ms; }
-                            }
-                        }
-                        Rectangle {
-                            height: 150px;
-                            border-radius: 6px;
-                            background: #0b0c0e;
-                            clip: true;
-                            Text {
-                                x: 12px;
-                                y: parent.height - self.height - 10px;
-                                width: parent.width - 24px;
-                                text: root.log-text;
-                                color: Theme.faint;
-                                font-family: Theme.mono;
-                                font-size: 11px;
-                                wrap: word-wrap;
-                            }
+                    }
+                    Chip {
+                        text: "discord";
+                        icon: "forum";
+                        interactive: true;
+                        clicked => {
+                            root.discord();
                         }
                     }
                 }
-
-                for n in root.news: NewsView {
-                    item: n;
-                    open(link) => { root.open(link); }
-                }
-
-                for g in root.groups: GroupCard {
-                    group: g;
-                    busy: root.busy;
-                    aur => { root.aur(); }
+                if root.compact: VerticalLayout {
+                    spacing: 4px;
+                    alignment: center;
+                    HorizontalLayout {
+                        alignment: center;
+                        IconButton {
+                            icon: "favorite";
+                            label: "donate";
+                            clicked => {
+                                root.donate();
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        alignment: center;
+                        IconButton {
+                            icon: "forum";
+                            label: "discord";
+                            clicked => {
+                                root.discord();
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        if root.tab == 1: Flickable {
-            vertical-stretch: 1;
-            content-height: hist.preferred-height;
-            hist := VerticalLayout {
-                width: parent.width;
-                padding: 24px;
-                spacing: 10px;
-                alignment: start;
-                Text {
-                    text: "History";
-                    color: Theme.text;
-                    font-size: 28px;
-                    font-weight: 600;
-                }
-                Text {
-                    text: root.history-note;
-                    color: Theme.muted;
-                    font-size: 14px;
-                    wrap: word-wrap;
-                }
-                Rectangle { height: 6px; }
-                for c in root.history: Card {
-                    VerticalLayout {
-                        padding: 14px;
-                        spacing: 10px;
+        Card {
+            horizontal-stretch: 1;
+            drop-shadow-blur: Theme.low-end ? 0px : 32px;
+            drop-shadow-offset-y: 12px;
+            drop-shadow-color: Theme.low-end ? transparent : #00000059;
+            clip: true;
+
+            if root.page == 0: PageFrame {
+                upd-scroll := Scroller {
+                    content: upd.preferred-height;
+                    upd := VerticalLayout {
+                        width: upd-scroll.width;
+                        padding: 28px;
+                        padding-top: 32px;
+                        spacing: 16px;
+                        alignment: start;
+
                         HorizontalLayout {
-                            spacing: 14px;
-                            Text {
-                                text: c.date;
-                                color: Theme.faint;
-                                font-family: Theme.mono;
-                                font-size: 12px;
-                                vertical-alignment: center;
-                                width: 130px;
+                            spacing: 20px;
+                            if root.checking || root.busy: Loader {
+                                size: 64px;
                             }
-                            Text {
-                                text: c.what;
-                                color: Theme.text;
-                                font-size: 14px;
-                                vertical-alignment: center;
-                                overflow: elide;
+                            if !root.checking && !root.busy: Badge {
+                                size: 64px;
+                                icon: root.stage == "error" || root.stage == "offline" ? "error"
+                                    : root.stage == "updates" ? "download"
+                                    : root.restart-needed ? "restart_alt"
+                                    : "check";
+                                fill: root.stage == "error" || root.stage == "offline" ? Theme.error-container
+                                    : root.stage == "updates" ? Theme.primary-container
+                                    : Theme.tertiary-container;
+                                tint: root.stage == "error" || root.stage == "offline" ? Theme.on-error-container
+                                    : root.stage == "updates" ? Theme.on-primary-container
+                                    : Theme.on-tertiary-container;
+                            }
+                            VerticalLayout {
+                                alignment: center;
+                                spacing: 4px;
                                 horizontal-stretch: 1;
-                            }
-                            FButton {
-                                text: "Undo";
-                                kind: "ghost";
-                                enabled: !root.busy;
-                                clicked => { root.confirm = root.confirm == c.number ? -1 : c.number; }
+                                Txt {
+                                    role: "headlineM";
+                                    text: root.headline;
+                                }
+                                if root.subline != "": Txt {
+                                    role: "bodyL";
+                                    text: root.subline;
+                                    color: Theme.on-surface-variant;
+                                }
                             }
                         }
-                        if root.confirm == c.number: HorizontalLayout {
-                            spacing: 12px;
-                            Text {
-                                text: "Go back to how the system was before this change? Your files and settings in your home folder are kept. This takes effect after a restart.";
-                                color: Theme.muted;
-                                font-size: 13px;
-                                wrap: word-wrap;
-                                vertical-alignment: center;
-                                horizontal-stretch: 1;
+
+                        HorizontalLayout {
+                            spacing: 10px;
+                            alignment: start;
+                            if root.stage == "updates" && root.can-update: PillButton {
+                                text: "update now";
+                                icon: "download";
+                                clicked => {
+                                    root.update();
+                                }
                             }
-                            FButton {
-                                text: "Restore";
-                                enabled: !root.busy;
-                                clicked => { root.undo(c.number); }
+                            if root.stage == "done" && root.restart-needed: PillButton {
+                                text: "restart now";
+                                icon: "restart_alt";
+                                clicked => {
+                                    root.restart();
+                                }
+                            }
+                            if root.stage == "error": PillButton {
+                                text: "try again";
+                                icon: "refresh";
+                                enabled: root.can-update;
+                                clicked => {
+                                    root.update();
+                                }
+                            }
+                            if root.has-aur && !root.busy && !root.checking && !root.can-update: PillButton {
+                                text: "update in terminal";
+                                icon: "terminal";
+                                clicked => {
+                                    root.aur();
+                                }
+                            }
+                            PillButton {
+                                text: root.checking ? "checking" : "check again";
+                                icon: "refresh";
+                                kind: "tonal";
+                                enabled: !root.busy && !root.checking;
+                                clicked => {
+                                    root.check();
+                                }
+                            }
+                        }
+
+                        if root.snapshot-note != "" && root.stage == "updates" && root.can-update: Rectangle {
+                            border-radius: Theme.lg;
+                            background: Theme.glass(Theme.surface-container-high);
+                            HorizontalLayout {
+                                padding: 14px;
+                                padding-left: 16px;
+                                spacing: 12px;
+                                Icon {
+                                    name: "photo_camera";
+                                    size: 20px;
+                                    tint: Theme.tertiary;
+                                }
+                                Txt {
+                                    role: "bodyM";
+                                    text: root.snapshot-note;
+                                    color: Theme.on-surface-variant;
+                                    vertical-alignment: center;
+                                    horizontal-stretch: 1;
+                                }
+                            }
+                        }
+
+                        if root.restart-needed && root.stage != "updating": Card {
+                            tone: Theme.tertiary-container;
+                            outlined: false;
+                            HorizontalLayout {
+                                padding: 16px;
+                                padding-left: 20px;
+                                spacing: 14px;
+                                VerticalLayout {
+                                    alignment: center;
+                                    Icon {
+                                        name: "restart_alt";
+                                        size: 24px;
+                                        tint: Theme.on-tertiary-container;
+                                    }
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    spacing: 2px;
+                                    horizontal-stretch: 1;
+                                    Txt {
+                                        role: "titleS";
+                                        text: "restart to finish updating";
+                                        color: Theme.on-tertiary-container;
+                                    }
+                                    Txt {
+                                        role: "bodyS";
+                                        text: root.restart-reason;
+                                        color: Theme.on-tertiary-container;
+                                    }
+                                }
+                                if root.stage != "done": VerticalLayout {
+                                    alignment: center;
+                                    PillButton {
+                                        text: "restart";
+                                        kind: "outlined";
+                                        clicked => {
+                                            root.restart();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if root.busy || root.stage == "done" || root.stage == "error": Card {
+                            tone: Theme.surface-container-high;
+                            VerticalLayout {
+                                padding: 20px;
+                                spacing: 14px;
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Txt {
+                                        role: "titleS";
+                                        text: root.step;
+                                        overflow: elide;
+                                        wrap: no-wrap;
+                                        horizontal-stretch: 1;
+                                    }
+                                    Txt {
+                                        role: "labelL";
+                                        text: Math.round(clamp(root.progress, 0, 1) * 100) + "%";
+                                        color: Theme.primary;
+                                        wrap: no-wrap;
+                                        horizontal-alignment: right;
+                                    }
+                                }
+                                WavyProgress {
+                                    value: root.progress;
+                                    moving: root.busy;
+                                }
+                                if root.error != "": HorizontalLayout {
+                                    spacing: 10px;
+                                    Icon {
+                                        name: "error";
+                                        size: 20px;
+                                        tint: Theme.error;
+                                    }
+                                    Txt {
+                                        role: "bodyM";
+                                        text: root.error;
+                                        color: Theme.error;
+                                        horizontal-stretch: 1;
+                                    }
+                                }
+                                HorizontalLayout {
+                                    alignment: start;
+                                    PillButton {
+                                        text: root.log-open ? "hide details" : "show details";
+                                        icon: "terminal";
+                                        kind: "text";
+                                        clicked => {
+                                            root.log-open = !root.log-open;
+                                        }
+                                    }
+                                }
+                                if root.log-open: Rectangle {
+                                    height: 220px;
+                                    border-radius: Theme.lg;
+                                    background: Theme.surface-container-lowest.with-alpha(Theme.low-end ? 1.0 : 0.8);
+                                    clip: true;
+                                    Text {
+                                        x: 14px;
+                                        y: min(12px, parent.height - self.height - 12px);
+                                        width: parent.width - 28px;
+                                        text: root.log-text;
+                                        color: Theme.on-surface-variant;
+                                        font-family: Theme.mono;
+                                        font-size: 12px;
+                                        wrap: word-wrap;
+                                    }
+                                }
+                            }
+                        }
+
+                        for n in root.alerts: NewsView {
+                            item: n;
+                            open(link) => {
+                                root.open(link);
+                            }
+                        }
+
+                        if root.groups.length > 0: Section {
+                            text: root.stage == "done" ? "still waiting" : "waiting to install";
+                        }
+
+                        for g in root.groups: GroupCard {
+                            group: g;
+                            busy: root.busy;
+                            aur => {
+                                root.aur();
+                            }
+                        }
+
+                        if root.stage == "uptodate" && root.news.length > 0: Section {
+                            text: "latest from Fiordland";
+                        }
+
+                        if root.stage == "uptodate" && root.news.length > 0: NewsView {
+                            item: root.news[0];
+                            open(link) => {
+                                root.open(link);
+                            }
+                        }
+
+                        for n in root.notes: NewsView {
+                            item: n;
+                            open(link) => {
+                                root.open(link);
+                            }
+                        }
+
+                        if root.source-note != "": Txt {
+                            role: "bodyS";
+                            text: root.source-note;
+                            color: Theme.outline;
+                        }
+                    }
+                }
+            }
+
+            if root.page == 1: PageFrame {
+                news-scroll := Scroller {
+                    content: news-col.preferred-height;
+                    news-col := VerticalLayout {
+                        width: news-scroll.width;
+                        padding: 28px;
+                        padding-top: 32px;
+                        spacing: 16px;
+                        alignment: start;
+                        Txt {
+                            role: "headlineM";
+                            text: "news";
+                        }
+                        Txt {
+                            role: "bodyL";
+                            text: root.news.length == 0 ? "No release notes on this system yet." : "What changed in each Fiordland release.";
+                            color: Theme.on-surface-variant;
+                        }
+                        for n in root.news: NewsView {
+                            item: n;
+                            open(link) => {
+                                root.open(link);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if root.page == 2: PageFrame {
+                hist-scroll := Scroller {
+                    content: hist.preferred-height;
+                    hist := VerticalLayout {
+                        width: hist-scroll.width;
+                        padding: 28px;
+                        padding-top: 32px;
+                        spacing: 12px;
+                        alignment: start;
+                        Txt {
+                            role: "headlineM";
+                            text: "history";
+                        }
+                        Txt {
+                            role: "bodyL";
+                            text: root.history-note;
+                            color: Theme.on-surface-variant;
+                        }
+                        Rectangle {
+                            height: 4px;
+                        }
+                        for c in root.history: Card {
+                            VerticalLayout {
+                                padding: 16px;
+                                padding-left: 20px;
+                                spacing: 12px;
+                                HorizontalLayout {
+                                    spacing: 16px;
+                                    Rectangle {
+                                        width: 40px;
+                                        height: 40px;
+                                        border-radius: 20px;
+                                        background: Theme.secondary-container;
+                                        Icon {
+                                            name: "photo_camera";
+                                            size: 20px;
+                                            tint: Theme.on-secondary-container;
+                                        }
+                                    }
+                                    VerticalLayout {
+                                        alignment: center;
+                                        spacing: 2px;
+                                        horizontal-stretch: 1;
+                                        Txt {
+                                            role: "titleS";
+                                            text: c.what;
+                                            overflow: elide;
+                                            wrap: no-wrap;
+                                        }
+                                        Txt {
+                                            role: "bodyS";
+                                            text: c.date + "  ·  snapshot " + c.number;
+                                            color: Theme.on-surface-variant;
+                                        }
+                                    }
+                                    VerticalLayout {
+                                        alignment: center;
+                                        PillButton {
+                                            text: "undo";
+                                            icon: "undo";
+                                            kind: "outlined";
+                                            enabled: !root.busy;
+                                            clicked => {
+                                                root.confirm = root.confirm == c.number ? -1 : c.number;
+                                            }
+                                        }
+                                    }
+                                }
+                                if root.confirm == c.number: HorizontalLayout {
+                                    spacing: 12px;
+                                    Txt {
+                                        role: "bodyM";
+                                        text: "Go back to how the system was before this change? Files and settings in your home folder are kept. It takes effect after a restart.";
+                                        color: Theme.on-surface-variant;
+                                        vertical-alignment: center;
+                                        horizontal-stretch: 1;
+                                    }
+                                    VerticalLayout {
+                                        alignment: center;
+                                        PillButton {
+                                            text: "restore";
+                                            kind: "danger";
+                                            enabled: !root.busy;
+                                            clicked => {
+                                                root.undo(c.number);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if root.page == 3: PageFrame {
+                set-scroll := Scroller {
+                    content: settings-col.preferred-height;
+                    settings-col := VerticalLayout {
+                        width: set-scroll.width;
+                        padding: 28px;
+                        padding-top: 32px;
+                        spacing: 16px;
+                        alignment: start;
+                        Txt {
+                            role: "headlineM";
+                            text: "settings";
+                        }
+                        Card {
+                            VerticalLayout {
+                                padding: 20px;
+                                spacing: 12px;
+                                SettingRow {
+                                    icon: "schedule";
+                                    title: "Check for updates";
+                                    detail: "The tray checks in the background, then waits this long before checking again.";
+                                }
+                                HorizontalLayout {
+                                    spacing: 8px;
+                                    alignment: start;
+                                    padding-left: 40px;
+                                    for h in [3, 6, 12, 24]: Chip {
+                                        text: h == 24 ? "once a day" : "every " + h + " h";
+                                        icon: root.interval-hours == h ? "check" : "";
+                                        selected: root.interval-hours == h;
+                                        interactive: true;
+                                        clicked => {
+                                            root.interval-hours = h;
+                                            root.settings-changed();
+                                        }
+                                    }
+                                }
+                                Rectangle {
+                                    height: 1px;
+                                    background: Theme.outline-variant.with-alpha(0.5);
+                                }
+                                SettingRow {
+                                    icon: "notifications";
+                                    title: "Notify me when updates are ready";
+                                    detail: "At most once a day, and only for updates you haven't been told about.";
+                                    VerticalLayout {
+                                        alignment: center;
+                                        Switch {
+                                            label: "notifications";
+                                            checked <=> root.notify;
+                                            toggled => {
+                                                root.settings-changed();
+                                            }
+                                        }
+                                    }
+                                }
+                                SettingRow {
+                                    icon: "battery_alert";
+                                    title: "Wait while on battery";
+                                    detail: "Checks resume once the charger is plugged in.";
+                                    VerticalLayout {
+                                        alignment: center;
+                                        Switch {
+                                            label: "wait while on battery";
+                                            checked <=> root.pause-battery;
+                                            toggled => {
+                                                root.settings-changed();
+                                            }
+                                        }
+                                    }
+                                }
+                                SettingRow {
+                                    icon: "wifi";
+                                    title: "Wait on metered connections";
+                                    detail: "Uses what NetworkManager knows about the connection.";
+                                    VerticalLayout {
+                                        alignment: center;
+                                        Switch {
+                                            label: "wait on metered connections";
+                                            checked <=> root.pause-metered;
+                                            toggled => {
+                                                root.settings-changed();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Card {
+                            VerticalLayout {
+                                padding: 20px;
+                                spacing: 6px;
+                                SettingRow {
+                                    icon: "info";
+                                    title: "Kuaka " + root.version + (root.release == "" ? "" : "  ·  Fiordland " + root.release);
+                                    detail: root.mode-note;
+                                }
                             }
                         }
                     }

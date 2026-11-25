@@ -1,0 +1,621 @@
+import { Palette } from "std-widgets.slint";
+
+export global Theme {
+    in property <int> mode: 0;
+    in property <bool> low-end: false;
+    in property <bool> reduce-motion: false;
+    in property <bool> symbols: true;
+    out property <bool> dark: mode == 1 || (mode == 0 && Palette.color-scheme != ColorScheme.light);
+
+    out property <color> primary: dark ? #9ECAFF : #2C6197;
+    out property <color> on-primary: dark ? #00325A : #FFFFFF;
+    out property <color> primary-container: dark ? #1D4A74 : #D2E4FF;
+    out property <color> on-primary-container: dark ? #D2E4FF : #001C37;
+    out property <color> secondary: dark ? #BAC8DB : #526070;
+    out property <color> secondary-container: dark ? #3A4857 : #D6E4F7;
+    out property <color> on-secondary-container: dark ? #D6E4F7 : #101D2A;
+    out property <color> tertiary: dark ? #86D6CB : #006A62;
+    out property <color> tertiary-container: dark ? #00504A : #A2F2E6;
+    out property <color> on-tertiary-container: dark ? #A2F2E6 : #00201D;
+    out property <color> error: dark ? #FFB4AB : #BA1A1A;
+    out property <color> error-container: dark ? #93000A : #FFDAD6;
+    out property <color> on-error-container: dark ? #FFDAD6 : #410002;
+    out property <color> surface: dark ? #0E1217 : #F8F9FF;
+    out property <color> surface-container-lowest: dark ? #090D12 : #FFFFFF;
+    out property <color> surface-container-low: dark ? #161B21 : #F2F3F9;
+    out property <color> surface-container: dark ? #1A1F25 : #ECEEF4;
+    out property <color> surface-container-high: dark ? #252A30 : #E6E8EE;
+    out property <color> surface-container-highest: dark ? #30353B : #E1E2E8;
+    out property <color> on-surface: dark ? #E1E2E8 : #191C20;
+    out property <color> on-surface-variant: dark ? #C1C7D0 : #41474F;
+    out property <color> outline: dark ? #8B919A : #717880;
+    out property <color> outline-variant: dark ? #41474F : #C1C7D0;
+    out property <color> wall-top: dark ? #0B1B2C : #D9E8F8;
+    out property <color> wall-bottom: dark ? #0A1218 : #EDF3F8;
+
+    out property <float> glass-alpha: low-end ? 1.0 : 0.72;
+
+    out property <length> xs: 4px;
+    out property <length> sm: 8px;
+    out property <length> md: 12px;
+    out property <length> lg: 16px;
+    out property <length> lg-inc: 20px;
+    out property <length> xl: 28px;
+    out property <length> xl-inc: 32px;
+    out property <length> xxl: 48px;
+
+    out property <duration> short: reduce-motion ? 0ms : 150ms;
+    out property <duration> medium: reduce-motion ? 0ms : 300ms;
+    out property <duration> long: reduce-motion ? 0ms : 500ms;
+
+    out property <string> font: "Inter";
+    out property <string> mono: "JetBrains Mono";
+    out property <string> symbol-font: "Material Symbols Rounded";
+
+    public pure function glass(c: color) -> color {
+        return c.with-alpha(glass-alpha);
+    }
+}
+
+export component Icon inherits Text {
+    in property <string> name;
+    in property <length> size: 24px;
+    in property <color> tint: Theme.on-surface;
+    width: size;
+    height: size;
+    color: tint;
+    font-size: Theme.symbols ? size : size * 0.8;
+    font-weight: 400;
+    font-family: Theme.symbols ? Theme.symbol-font : Theme.font;
+    horizontal-alignment: center;
+    vertical-alignment: center;
+    accessible-role: none;
+    text: Theme.symbols ? (
+        name == "check" ? "\u{e668}"
+        : name == "check_circle" ? "\u{f0be}"
+        : name == "close" ? "\u{e5cd}"
+        : name == "download" ? "\u{f090}"
+        : name == "sync" ? "\u{e627}"
+        : name == "error" ? "\u{f8b6}"
+        : name == "warning" ? "\u{f083}"
+        : name == "restart_alt" ? "\u{f053}"
+        : name == "refresh" ? "\u{e5d5}"
+        : name == "expand_more" ? "\u{e5cf}"
+        : name == "expand_less" ? "\u{e5ce}"
+        : name == "history" ? "\u{e8b3}"
+        : name == "newspaper" ? "\u{eb81}"
+        : name == "settings" ? "\u{e8b8}"
+        : name == "terminal" ? "\u{eb8e}"
+        : name == "apps" ? "\u{e5c3}"
+        : name == "deployed_code" ? "\u{f720}"
+        : name == "photo_camera" ? "\u{e412}"
+        : name == "open_in_new" ? "\u{e89e}"
+        : name == "undo" ? "\u{e166}"
+        : name == "favorite" ? "\u{e87e}"
+        : name == "forum" ? "\u{e8af}"
+        : name == "schedule" ? "\u{efd6}"
+        : name == "notifications" ? "\u{e7f5}"
+        : name == "battery_alert" ? "\u{e19c}"
+        : name == "wifi" ? "\u{e63e}"
+        : name == "info" ? "\u{e88e}"
+        : name == "system_update_alt" ? "\u{e8d7}"
+        : name == "done_all" ? "\u{e877}"
+        : "\u{e88e}"
+    ) : (
+        name == "check" || name == "check_circle" || name == "done_all" ? "✓"
+        : name == "close" ? "×"
+        : name == "download" || name == "system_update_alt" ? "↓"
+        : name == "sync" || name == "refresh" || name == "restart_alt" ? "↻"
+        : name == "error" || name == "warning" ? "!"
+        : name == "expand_more" ? "⌄"
+        : name == "expand_less" ? "⌃"
+        : name == "history" || name == "undo" ? "↺"
+        : name == "newspaper" ? "≡"
+        : name == "settings" ? "⚙"
+        : name == "terminal" ? "›"
+        : name == "apps" ? "▦"
+        : name == "deployed_code" ? "▣"
+        : name == "photo_camera" ? "◉"
+        : name == "open_in_new" ? "↗"
+        : name == "favorite" ? "♥"
+        : name == "forum" ? "✉"
+        : name == "schedule" ? "◷"
+        : name == "notifications" ? "•"
+        : name == "battery_alert" ? "▯"
+        : name == "wifi" ? "≈"
+        : "i"
+    );
+}
+
+export component Txt inherits Text {
+    in property <string> role: "bodyM";
+    color: Theme.on-surface;
+    wrap: word-wrap;
+    font-size: role == "displayS" ? 36px
+        : role == "headlineM" ? 28px
+        : role == "headlineS" ? 24px
+        : role == "titleL" ? 22px
+        : role == "titleM" ? 16px
+        : role == "titleS" ? 14px
+        : role == "bodyL" ? 16px
+        : role == "bodyS" ? 12px
+        : role == "labelL" ? 14px
+        : role == "labelM" ? 12px
+        : role == "labelS" ? 11px
+        : role == "mono" ? 12px
+        : 14px;
+    font-weight: role == "displayS" ? 400
+        : role == "headlineM" || role == "headlineS" ? 500
+        : role == "titleL" || role == "titleM" || role == "titleS" || role == "labelL" || role == "labelM" || role == "labelS" ? 600
+        : 400;
+    letter-spacing: role == "displayS" || role == "headlineM" || role == "headlineS" ? -0.02 * self.font-size : 0px;
+    font-family: role == "mono" ? Theme.mono : Theme.font;
+}
+
+export component Cookie inherits Rectangle {
+    in property <color> fill;
+    in property <string> shape: "c9";
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: 100;
+        viewbox-height: 100;
+        fill: root.fill;
+        commands: root.shape == "c12" ? "M 50 0 L 52.6 0.5 L 55 2 L 57.3 3.8 L 59.5 5.5 L 61.6 6.5 L 64.1 6.7 L 66.7 6.4 L 69.6 5.9 L 72.5 5.9 L 75 6.7 L 77 8.5 L 78.4 10.9 L 79.4 13.7 L 80.4 16.2 L 81.8 18.2 L 83.8 19.6 L 86.3 20.6 L 89.1 21.6 L 91.5 23 L 93.3 25 L 94.1 27.5 L 94.1 30.4 L 93.6 33.3 L 93.3 35.9 L 93.5 38.4 L 94.5 40.5 L 96.2 42.7 L 98 45 L 99.5 47.4 L 100 50 L 99.5 52.6 L 98 55 L 96.2 57.3 L 94.5 59.5 L 93.5 61.6 L 93.3 64.1 L 93.6 66.7 L 94.1 69.6 L 94.1 72.5 L 93.3 75 L 91.5 77 L 89.1 78.4 L 86.3 79.4 L 83.8 80.4 L 81.8 81.8 L 80.4 83.8 L 79.4 86.3 L 78.4 89.1 L 77 91.5 L 75 93.3 L 72.5 94.1 L 69.6 94.1 L 66.7 93.6 L 64.1 93.3 L 61.6 93.5 L 59.5 94.5 L 57.3 96.2 L 55 98 L 52.6 99.5 L 50 100 L 47.4 99.5 L 45 98 L 42.7 96.2 L 40.5 94.5 L 38.4 93.5 L 35.9 93.3 L 33.3 93.6 L 30.4 94.1 L 27.5 94.1 L 25 93.3 L 23 91.5 L 21.6 89.1 L 20.6 86.3 L 19.6 83.8 L 18.2 81.8 L 16.2 80.4 L 13.7 79.4 L 10.9 78.4 L 8.5 77 L 6.7 75 L 5.9 72.5 L 5.9 69.6 L 6.4 66.7 L 6.7 64.1 L 6.5 61.6 L 5.5 59.5 L 3.8 57.3 L 2 55 L 0.5 52.6 L 0 50 L 0.5 47.4 L 2 45 L 3.8 42.7 L 5.5 40.5 L 6.5 38.4 L 6.7 35.9 L 6.4 33.3 L 5.9 30.4 L 5.9 27.5 L 6.7 25 L 8.5 23 L 10.9 21.6 L 13.7 20.6 L 16.2 19.6 L 18.2 18.2 L 19.6 16.2 L 20.6 13.7 L 21.6 10.9 L 23 8.5 L 25 6.7 L 27.5 5.9 L 30.4 5.9 L 33.3 6.4 L 35.9 6.7 L 38.4 6.5 L 40.5 5.5 L 42.7 3.8 L 45 2 L 47.4 0.5 Z" : root.shape == "c4" ? "M 50 0 L 54.9 0.5 L 59.5 2.1 L 63.8 4.5 L 67.6 7.5 L 71 10.8 L 74 14.1 L 76.8 17.3 L 79.7 20.3 L 82.7 23.2 L 85.9 26 L 89.2 29 L 92.5 32.4 L 95.5 36.2 L 97.9 40.5 L 99.5 45.1 L 100 50 L 99.5 54.9 L 97.9 59.5 L 95.5 63.8 L 92.5 67.6 L 89.2 71 L 85.9 74 L 82.7 76.8 L 79.7 79.7 L 76.8 82.7 L 74 85.9 L 71 89.2 L 67.6 92.5 L 63.8 95.5 L 59.5 97.9 L 54.9 99.5 L 50 100 L 45.1 99.5 L 40.5 97.9 L 36.2 95.5 L 32.4 92.5 L 29 89.2 L 26 85.9 L 23.2 82.7 L 20.3 79.7 L 17.3 76.8 L 14.1 74 L 10.8 71 L 7.5 67.6 L 4.5 63.8 L 2.1 59.5 L 0.5 54.9 L 0 50 L 0.5 45.1 L 2.1 40.5 L 4.5 36.2 L 7.5 32.4 L 10.8 29 L 14.1 26 L 17.3 23.2 L 20.3 20.3 L 23.2 17.3 L 26 14.1 L 29 10.8 L 32.4 7.5 L 36.2 4.5 L 40.5 2.1 L 45.1 0.5 Z" : "M 50 0 L 52.9 0.5 L 55.6 1.8 L 58.2 3.7 L 60.5 5.7 L 62.7 7.5 L 65 8.7 L 67.6 9.2 L 70.4 9.3 L 73.5 9.3 L 76.7 9.5 L 79.6 10.2 L 82.1 11.7 L 84 13.9 L 85.3 16.7 L 86 19.8 L 86.5 22.8 L 87.1 25.6 L 88.1 28 L 89.7 30.1 L 91.8 32 L 94.2 33.9 L 96.5 36.1 L 98.3 38.6 L 99.2 41.3 L 99.3 44.2 L 98.4 47.2 L 97 50 L 95.4 52.6 L 94.1 55.2 L 93.3 57.6 L 93.2 60.2 L 93.6 63 L 94.2 66.1 L 94.5 69.2 L 94.3 72.3 L 93.3 75 L 91.4 77.3 L 88.9 79 L 86 80.2 L 83.1 81.2 L 80.5 82.3 L 78.3 83.7 L 76.5 85.6 L 75 88 L 73.5 90.7 L 71.8 93.3 L 69.6 95.5 L 67.1 97 L 64.2 97.5 L 61.2 97.2 L 58.2 96.3 L 55.3 95.2 L 52.6 94.3 L 50 94 L 47.4 94.3 L 44.7 95.2 L 41.8 96.3 L 38.8 97.2 L 35.8 97.5 L 32.9 97 L 30.4 95.5 L 28.2 93.3 L 26.5 90.7 L 25 88 L 23.5 85.6 L 21.7 83.7 L 19.5 82.3 L 16.9 81.2 L 14 80.2 L 11.1 79 L 8.6 77.3 L 6.7 75 L 5.7 72.3 L 5.5 69.2 L 5.8 66.1 L 6.4 63 L 6.8 60.2 L 6.7 57.6 L 5.9 55.2 L 4.6 52.6 L 3 50 L 1.6 47.2 L 0.7 44.2 L 0.8 41.3 L 1.7 38.6 L 3.5 36.1 L 5.8 33.9 L 8.2 32 L 10.3 30.1 L 11.9 28 L 12.9 25.6 L 13.5 22.8 L 14 19.8 L 14.7 16.7 L 16 13.9 L 17.9 11.7 L 20.4 10.2 L 23.3 9.5 L 26.5 9.3 L 29.6 9.3 L 32.4 9.2 L 35 8.7 L 37.3 7.5 L 39.5 5.7 L 41.8 3.7 L 44.4 1.8 L 47.1 0.5 Z";
+    }
+    @children
+}
+
+export component Badge inherits Rectangle {
+    in property <string> icon;
+    in property <color> fill: Theme.primary-container;
+    in property <color> tint: Theme.on-primary-container;
+    in property <string> shape: "c9";
+    in property <length> size: 56px;
+    width: size;
+    height: size;
+    Cookie {
+        width: 100%;
+        height: 100%;
+        fill: root.fill;
+        shape: root.shape;
+    }
+    Icon {
+        name: root.icon;
+        size: root.size * 0.5;
+        tint: root.tint;
+    }
+}
+
+export component Loader inherits Rectangle {
+    in property <length> size: 56px;
+    width: size;
+    height: size;
+    spin := Rectangle {
+        width: 100%;
+        height: 100%;
+        transform-rotation: Theme.reduce-motion ? 0deg : Math.mod(animation-tick() / 1ms, 2400) / 2400 * 360deg;
+        Cookie {
+            width: 100%;
+            height: 100%;
+            fill: Theme.primary-container;
+            shape: "c9";
+        }
+    }
+    Rectangle {
+        width: root.size * 0.36;
+        height: self.width;
+        border-radius: self.width / 2;
+        background: Theme.primary;
+        opacity: Theme.reduce-motion ? 1 : 0.55 + 0.45 * Math.abs(Math.sin(Math.mod(animation-tick() / 1ms, 1600) / 1600 * 180deg));
+    }
+}
+
+export component PillButton inherits Rectangle {
+    in property <string> text;
+    in property <string> icon;
+    in property <string> kind: "filled";
+    in property <bool> enabled: true;
+    callback clicked;
+    property <color> fg: kind == "filled" ? Theme.on-primary
+        : kind == "tonal" ? Theme.on-secondary-container
+        : kind == "tertiary" ? Theme.on-tertiary-container
+        : kind == "danger" ? Theme.on-error-container
+        : Theme.primary;
+    property <color> bg: kind == "filled" ? Theme.primary
+        : kind == "tonal" ? Theme.secondary-container
+        : kind == "tertiary" ? Theme.tertiary-container
+        : kind == "danger" ? Theme.error-container
+        : transparent;
+    height: 40px;
+    min-width: row.preferred-width;
+    preferred-width: row.preferred-width;
+    horizontal-stretch: 0;
+    border-radius: touch.pressed && root.enabled ? Theme.md : self.height / 2;
+    animate border-radius {
+        duration: Theme.reduce-motion ? 0ms : 350ms;
+        easing: spring(0.45);
+    }
+    background: bg;
+    border-width: kind == "outlined" ? 1px : 0px;
+    border-color: Theme.outline-variant;
+    opacity: enabled ? 1 : 0.38;
+    accessible-role: button;
+    accessible-label: text;
+    accessible-action-default => {
+        if (root.enabled) {
+            root.clicked();
+        }
+    }
+    forward-focus: focus;
+    Rectangle {
+        border-radius: root.border-radius;
+        background: root.fg.with-alpha(!root.enabled ? 0 : touch.pressed ? 0.12 : touch.has-hover || focus.has-focus ? 0.08 : 0);
+        animate background { duration: Theme.short; }
+    }
+    row := HorizontalLayout {
+        alignment: center;
+        spacing: 8px;
+        padding-left: root.icon != "" ? 16px : 24px;
+        padding-right: 24px;
+        if root.icon != "": VerticalLayout {
+            alignment: center;
+            Icon {
+                name: root.icon;
+                size: 20px;
+                tint: root.fg;
+            }
+        }
+        Text {
+            text: root.text;
+            color: root.fg;
+            font-size: 14px;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => {
+            root.clicked();
+        }
+    }
+    focus := FocusScope {
+        enabled: root.enabled;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+    if focus.has-focus: Rectangle {
+        x: -3px;
+        y: -3px;
+        width: root.width + 6px;
+        height: root.height + 6px;
+        border-radius: root.border-radius + 3px;
+        border-width: 2px;
+        border-color: Theme.primary;
+    }
+}
+
+export component IconButton inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <bool> enabled: true;
+    in property <color> tint: Theme.on-surface-variant;
+    callback clicked;
+    width: 40px;
+    height: 40px;
+    border-radius: touch.pressed ? Theme.md : self.height / 2;
+    animate border-radius {
+        duration: Theme.reduce-motion ? 0ms : 350ms;
+        easing: spring(0.45);
+    }
+    background: Theme.on-surface.with-alpha(touch.pressed ? 0.12 : touch.has-hover ? 0.08 : 0);
+    animate background { duration: Theme.short; }
+    opacity: enabled ? 1 : 0.38;
+    accessible-role: button;
+    accessible-label: label;
+    accessible-action-default => {
+        root.clicked();
+    }
+    Icon {
+        name: root.icon;
+        size: 24px;
+        tint: root.tint;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component Card inherits Rectangle {
+    in property <color> tone: Theme.surface-container;
+    in property <bool> outlined: true;
+    border-radius: Theme.xl;
+    background: Theme.glass(tone);
+    border-width: outlined ? 1px : 0px;
+    border-color: Theme.outline-variant.with-alpha(0.6);
+    animate background { duration: Theme.medium; }
+    Rectangle {
+        x: root.border-radius * 0.7;
+        y: 1px;
+        width: max(0px, root.width - root.border-radius * 1.4);
+        height: 1px;
+        background: Theme.on-surface.with-alpha(0.08);
+    }
+    @children
+}
+
+export component Chip inherits Rectangle {
+    in property <string> text;
+    in property <string> icon;
+    in property <bool> selected: false;
+    in property <bool> interactive: false;
+    in property <color> tone: Theme.secondary-container;
+    in property <color> ink: Theme.on-secondary-container;
+    callback clicked;
+    height: 32px;
+    min-width: row.preferred-width;
+    preferred-width: row.preferred-width;
+    horizontal-stretch: 0;
+    border-radius: selected ? Theme.lg : Theme.sm;
+    animate border-radius {
+        duration: Theme.reduce-motion ? 0ms : 300ms;
+        easing: spring(0.4);
+    }
+    background: selected ? tone : touch.has-hover && interactive ? Theme.on-surface.with-alpha(0.08) : transparent;
+    animate background { duration: Theme.short; }
+    border-width: selected ? 0px : 1px;
+    border-color: Theme.outline-variant;
+    accessible-role: button;
+    accessible-label: text;
+    accessible-checked: selected;
+    accessible-action-default => {
+        if (root.interactive) {
+            root.clicked();
+        }
+    }
+    row := HorizontalLayout {
+        alignment: center;
+        spacing: 6px;
+        padding-left: root.icon != "" ? 8px : 12px;
+        padding-right: 12px;
+        if root.icon != "": VerticalLayout {
+            alignment: center;
+            Icon {
+                name: root.icon;
+                size: 18px;
+                tint: root.selected ? root.ink : Theme.on-surface-variant;
+            }
+        }
+        Text {
+            text: root.text;
+            color: root.selected ? root.ink : Theme.on-surface-variant;
+            font-size: 12px;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+    }
+    touch := TouchArea {
+        enabled: root.interactive;
+        mouse-cursor: root.interactive ? pointer : default;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component Switch inherits Rectangle {
+    in-out property <bool> checked;
+    in property <string> label;
+    callback toggled();
+    width: 52px;
+    height: 32px;
+    border-radius: 16px;
+    background: checked ? Theme.primary : Theme.surface-container-highest;
+    border-width: checked ? 0px : 2px;
+    border-color: Theme.outline;
+    animate background { duration: Theme.short; }
+    accessible-role: checkbox;
+    accessible-label: label;
+    accessible-checkable: true;
+    accessible-checked: checked;
+    accessible-action-default => {
+        root.checked = !root.checked;
+        root.toggled();
+    }
+    thumb := Rectangle {
+        property <length> d: touch.pressed ? 28px : root.checked ? 24px : 16px;
+        width: d;
+        height: d;
+        border-radius: d / 2;
+        x: root.checked ? root.width - d - 4px : (root.height - d) / 2;
+        y: (root.height - d) / 2;
+        background: root.checked ? Theme.on-primary : Theme.outline;
+        animate x, width, height {
+            duration: Theme.reduce-motion ? 0ms : 350ms;
+            easing: spring(0.4);
+        }
+        if root.checked: Icon {
+            name: "check";
+            size: 16px;
+            tint: Theme.primary;
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.checked = !root.checked;
+            root.toggled();
+        }
+    }
+}
+
+export component WavyProgress inherits Rectangle {
+    in property <float> value;
+    in property <bool> moving: true;
+    height: 12px;
+    property <length> filled: self.width * clamp(value, 0, 1);
+    property <bool> wavy: !Theme.low-end;
+    property <length> phase: Theme.reduce-motion || !moving ? 0px : Math.mod(animation-tick() / 1ms, 1400) / 1400 * 28px;
+    animate filled {
+        duration: Theme.reduce-motion ? 0ms : 500ms;
+        easing: cubic-bezier(0.05, 0.7, 0.1, 1.0);
+    }
+    accessible-role: progress-indicator;
+    accessible-value: Math.round(clamp(value, 0, 1) * 100) + "%";
+    Rectangle {
+        x: min(root.width, root.filled + 8px);
+        y: (root.height - self.height) / 2;
+        width: max(0px, root.width - self.x);
+        height: 4px;
+        border-radius: 2px;
+        background: Theme.secondary-container;
+    }
+    Rectangle {
+        x: root.width - 4px;
+        y: (root.height - self.height) / 2;
+        width: 4px;
+        height: 4px;
+        border-radius: 2px;
+        background: Theme.primary;
+    }
+    if !root.wavy: Rectangle {
+        x: 0;
+        y: (root.height - self.height) / 2;
+        width: root.filled;
+        height: 4px;
+        border-radius: 2px;
+        background: Theme.primary;
+    }
+    if root.wavy: Rectangle {
+        x: 0;
+        y: 0;
+        width: root.filled;
+        height: root.height;
+        clip: true;
+        for i in Math.ceil(root.filled / 28px) + 1: Path {
+            x: i * 28px - root.phase - 4px;
+            y: 0;
+            width: 36px;
+            height: root.height;
+            viewbox-x: -4;
+            viewbox-y: 0;
+            viewbox-width: 36;
+            viewbox-height: 12;
+            clip: true;
+            stroke: Theme.primary;
+            stroke-width: 4px;
+            commands: "M -7 3 L -3.5 3.9 L 0 6 L 3.5 8.1 L 7 9 L 10.5 8.1 L 14 6 L 17.5 3.9 L 21 3 L 24.5 3.9 L 28 6 L 31.5 8.1 L 35 9";
+        }
+    }
+}
+
+export component NavItem inherits Rectangle {
+    in property <string> icon;
+    in property <string> text;
+    in property <bool> selected;
+    in property <bool> compact;
+    in property <int> badge: 0;
+    callback clicked;
+    height: compact ? 56px : 48px;
+    border-radius: self.height / 2;
+    background: selected ? Theme.secondary-container : touch.has-hover ? Theme.on-surface.with-alpha(0.08) : transparent;
+    animate background { duration: Theme.short; }
+    accessible-role: tab;
+    accessible-label: text;
+    accessible-action-default => {
+        root.clicked();
+    }
+    if !root.compact: HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 12px;
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                name: root.icon;
+                size: 24px;
+                tint: root.selected ? Theme.on-secondary-container : Theme.on-surface-variant;
+            }
+        }
+        Text {
+            text: root.text;
+            color: root.selected ? Theme.on-secondary-container : Theme.on-surface-variant;
+            font-size: 14px;
+            font-weight: 600;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+        if root.badge > 0: VerticalLayout {
+            alignment: center;
+            Rectangle {
+                height: 20px;
+                width: max(20px, n.preferred-width + 12px);
+                border-radius: 10px;
+                background: Theme.primary;
+                n := Text {
+                    text: root.badge;
+                    color: Theme.on-primary;
+                    font-size: 11px;
+                    font-weight: 700;
+                }
+            }
+        }
+    }
+    if root.compact: Icon {
+        name: root.icon;
+        size: 24px;
+        tint: root.selected ? Theme.on-secondary-container : Theme.on-surface-variant;
+    }
+    if root.compact && root.badge > 0: Rectangle {
+        x: root.width / 2 + 6px;
+        y: 8px;
+        width: 8px;
+        height: 8px;
+        border-radius: 4px;
+        background: Theme.error;
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component Backdrop inherits Rectangle {
+    background: Theme.low-end ? Theme.surface : @linear-gradient(180deg, Theme.wall-top 0%, Theme.wall-bottom 100%);
+    if !Theme.low-end: Rectangle {
+        width: root.width;
+        height: root.height;
+        clip: true;
+        for i in 7: Rectangle {
+            property <length> d: root.width * 0.95 * (1 - i / 8);
+            x: root.width * 0.66 - self.d / 2;
+            y: root.height * 0.02 - self.d / 2;
+            width: self.d;
+            height: self.d;
+            border-radius: self.d / 2;
+            background: Theme.primary.with-alpha(Theme.dark ? 0.035 : 0.05);
+        }
+        for i in 7: Rectangle {
+            property <length> d: root.width * 0.75 * (1 - i / 8);
+            x: root.width * 0.1 - self.d / 2;
+            y: root.height * 0.98 - self.d / 2;
+            width: self.d;
+            height: self.d;
+            border-radius: self.d / 2;
+            background: Theme.tertiary.with-alpha(Theme.dark ? 0.03 : 0.045);
+        }
+    }
+}
