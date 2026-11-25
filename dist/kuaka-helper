@@ -2,17 +2,65 @@
 set -euo pipefail
 exec 2>&1
 export LC_ALL=C
+export PATH=/usr/bin
+umask 022
+
+readonly PACMAN=/usr/bin/pacman
+readonly LOCK=/var/lib/pacman/db.lck
+readonly SYNC=/var/lib/pacman/sync
+
+alpm_busy() {
+  /usr/bin/pgrep -x 'pacman|pamac-daemon|packagekitd' >/dev/null
+}
+
+clear_stale_lock() {
+  [ -f "$LOCK" ] && [ ! -L "$LOCK" ] || return 0
+  local boot mtime
+  boot=$(/usr/bin/awk '/^btime /{print $2}' /proc/stat)
+  mtime=$(/usr/bin/stat -c %Y -- "$LOCK")
+  if [ "$mtime" -lt "$boot" ] || { ! alpm_busy && /usr/bin/sleep 1 && ! alpm_busy; }; then
+    echo "removing a stale pacman lock left by an interrupted update"
+    /usr/bin/rm -f -- "$LOCK"
+  fi
+}
+
+clear_bad_signatures() {
+  local f first
+  shopt -s nullglob
+  for f in "$SYNC"/*.db.sig "$SYNC"/*.files.sig; do
+    [ -f "$f" ] && [ ! -L "$f" ] || continue
+    first=$(/usr/bin/head -c 256 -- "$f" | /usr/bin/tr -d ' \t\r\n\000' | /usr/bin/head -c 1 || true)
+    if [ "$first" = "<" ]; then
+      echo "removing a corrupt database signature (a mirror error page): ${f##*/}"
+      /usr/bin/rm -f -- "$f"
+    fi
+  done
+  shopt -u nullglob
+}
+
+upgrade_flags() {
+  local channel=
+  if [ -f /etc/fiordland/channel ] && [ ! -L /etc/fiordland/channel ]; then
+    channel=$(/usr/bin/head -c 64 /etc/fiordland/channel | /usr/bin/tr -d '[:space:]')
+  fi
+  if [ "$channel" = stable ]; then
+    echo -Syuu
+  else
+    echo -Syu
+  fi
+}
+
 case "${1:-}" in
   upgrade)
     [ $# -eq 1 ] || exit 2
-    if [ -e /var/lib/pacman/db.lck ] && ! pgrep -x pacman >/dev/null; then
-      rm -f /var/lib/pacman/db.lck
-    fi
-    exec pacman -Syu --noconfirm
+    clear_stale_lock
+    clear_bad_signatures
+    flags=$(upgrade_flags)
+    exec "$PACMAN" "$flags" --noconfirm
     ;;
   rollback)
-    [ $# -eq 2 ] && [[ $2 =~ ^[0-9]+$ ]] || exit 2
-    exec fiordland-rollback -y "$2"
+    [ $# -eq 2 ] && [[ $2 =~ ^[1-9][0-9]{0,8}$ ]] || exit 2
+    exec /usr/bin/fiordland-rollback -y "$2"
     ;;
   *)
     exit 2
