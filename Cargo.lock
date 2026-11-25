@@ -1862,7 +1862,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9590458a3ba4ad8e66a6b572dbe758cc5d4f84f57e682a097358e4fe0f02b006"
 dependencies = [
  "accesskit",
- "async-channel",
  "bitflags 2.13.2",
  "bytemuck",
  "chrono",
@@ -1875,7 +1874,6 @@ dependencies = [
  "icu_normalizer",
  "image",
  "js-sys",
- "ksni",
  "lyon_algorithms",
  "lyon_extra",
  "lyon_geom",
@@ -2423,17 +2421,20 @@ dependencies = [
 
 [[package]]
 name = "kuaka"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "ksni",
+ "libc",
  "notify-rust",
+ "png",
  "quick-xml 0.37.5",
  "serde",
  "serde_json",
  "slint",
  "slint-build",
  "ureq",
+ "zbus 5.19.0",
 ]
 
 [[package]]

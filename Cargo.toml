@@ -1,19 +1,25 @@
 [package]
 name = "kuaka"
-version = "0.1.1"
+version = "1.0.0"
 edition = "2021"
 description = "The Fiordland Linux update manager"
 license = "GPL-3.0-only"
 
+[features]
+shots = ["dep:png"]
+
 [dependencies]
 anyhow = "1"
 ksni = { version = "0.3", default-features = false, features = ["blocking", "async-io"] }
+libc = "0.2"
 notify-rust = "4"
+png = { version = "0.18", optional = true }
 quick-xml = "0.37"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-slint = "1.19"
+slint = { version = "1.19", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-femtovg", "renderer-software", "software-renderer-path", "accessibility"] }
 ureq = "2"
+zbus = { version = "5.19", default-features = false, features = ["blocking-api", "async-io"] }
 
 [build-dependencies]
 slint-build = "1.19"
