@@ -46,12 +46,12 @@ component PageFrame inherits Rectangle {
 
 component Scroller inherits Flickable {
     in property <length> content: 0px;
-    viewport-height: max(self.height, content);
-    if self.viewport-height > self.height + 1px: Rectangle {
+    content-height: max(self.height, content);
+    if self.content-height > self.height + 1px: Rectangle {
         x: root.width - 6px;
-        y: -root.viewport-y - root.viewport-y / root.viewport-height * root.height + 6px;
+        y: -root.content-y - root.content-y / root.content-height * root.height + 6px;
         width: 4px;
-        height: max(24px, root.height / root.viewport-height * root.height - 12px);
+        height: max(24px, root.height / root.content-height * root.height - 12px);
         border-radius: 2px;
         background: Theme.on-surface.with-alpha(0.18);
     }
@@ -327,7 +327,10 @@ export component App inherits Window {
     callback discord();
     callback settings-changed();
 
-    property <bool> compact: self.width < 780px;
+    property <bool> compact: false;
+    changed width => {
+        self.compact = self.width < 780px;
+    }
     property <bool> busy: stage == "updating";
     property <bool> checking: stage == "checking";
 
@@ -339,6 +342,10 @@ export component App inherits Window {
     }
 
     HorizontalLayout {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
         padding: 12px;
         spacing: 12px;
 
