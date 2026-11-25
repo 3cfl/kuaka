@@ -206,7 +206,9 @@ pub fn apply(ui: &App, s: &Snapshot, keep_stage: bool) {
     ui.set_has_aur(s.pending.aur.as_ref().is_some_and(|l| !l.is_empty()) && sys::has(sys::TAWAKI));
     ui.set_pending_count(s.pending.total().min(999) as i32);
     ui.set_groups(ModelRc::new(VecModel::from(groups(s))));
-    ui.set_alerts(news_cards(&s.alerts));
+    let (warn, notes): (Vec<_>, Vec<_>) = s.alerts.iter().cloned().partition(|n| n.warn);
+    ui.set_alerts(news_cards(&warn));
+    ui.set_notes(news_cards(&notes));
     ui.set_news(news_cards(&s.news));
     ui.set_source_note(
         if s.pending.via_tawaki {

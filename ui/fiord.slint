@@ -506,11 +506,12 @@ export component WavyProgress inherits Rectangle {
         Path {
             x: -root.phase;
             y: 0;
-            width: 2000px;
+            width: min(2000px, root.filled + 32px);
             height: root.height;
             viewbox-x: 0;
             viewbox-y: 0;
-            viewbox-width: 2000;
+            viewbox-width: self.width / 1px;
+            clip: true;
             viewbox-height: 12;
             stroke: Theme.primary;
             stroke-width: 4px;

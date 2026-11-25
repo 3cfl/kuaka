@@ -304,6 +304,7 @@ export component App inherits Window {
     in property <int> pending-count;
     in property <[Group]> groups;
     in property <[NewsCard]> alerts;
+    in property <[NewsCard]> notes;
     in property <[NewsCard]> news;
     in property <[Change]> history;
     in property <string> history-note;
@@ -711,6 +712,24 @@ export component App inherits Window {
                             busy: root.busy;
                             aur => {
                                 root.aur();
+                            }
+                        }
+
+                        if root.stage == "uptodate" && root.news.length > 0: Section {
+                            text: "latest from Fiordland";
+                        }
+
+                        if root.stage == "uptodate" && root.news.length > 0: NewsView {
+                            item: root.news[0];
+                            open(link) => {
+                                root.open(link);
+                            }
+                        }
+
+                        for n in root.notes: NewsView {
+                            item: n;
+                            open(link) => {
+                                root.open(link);
                             }
                         }
 
