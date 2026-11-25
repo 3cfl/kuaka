@@ -291,7 +291,7 @@ mod tests {
 
     #[test]
     fn helper_allowlist() {
-        assert!(matches!(pkexec_result(126), Err(_)));
+        assert!(pkexec_result(126).is_err());
         assert!(pkexec_result(0).is_ok());
         if sys::has(sys::PKEXEC) && sys::has(sys::HELPER) {
             assert!(helper(&["upgrade"]).is_ok());

@@ -165,10 +165,7 @@ fn checkup_db() -> Option<PathBuf> {
 
 fn fallback() -> Pending {
     let pacman = if sys::has(sys::CHECKUPDATES) {
-        let mut cmd_db = None;
-        if let Some(db) = checkup_db() {
-            cmd_db = Some(db);
-        }
+        let cmd_db = checkup_db();
         let mut c = sys::command(sys::CHECKUPDATES);
         c.arg("--nocolor");
         if let Some(db) = &cmd_db {

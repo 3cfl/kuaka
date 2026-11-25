@@ -267,7 +267,7 @@ pub fn run(dir: &str, prefix: &str) -> anyhow::Result<()> {
                     let _ = slint::quit_event_loop();
                     return;
                 }
-                if k % 2 == 0 {
+                if k.is_multiple_of(2) {
                     (scenes[i].1)(&ui);
                     ui.window().request_redraw();
                 } else {
