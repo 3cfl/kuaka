@@ -2,20 +2,89 @@ name: ci
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
+defaults:
+  run:
+    shell: bash
 permissions:
   contents: read
+env:
+  CARGO_TERM_COLOR: never
+  SYMBOLS_COMMIT: 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7
+  SYMBOLS_SHA256: 7e74e36533ccee12c2b81e75bfcf3ccf123d3bb7e7e46d65d94445f23db0c97c
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
+    container: archlinux:latest
     steps:
+      - run: pacman -Syu --noconfirm --needed git rust gcc pkgconf fontconfig freetype2 libxkbcommon libxkbcommon-x11 wayland libglvnd libx11 libxcursor libxrandr libxi dbus
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libxkbcommon-dev libdbus-1-dev
-      - run: rustup toolchain install stable --profile minimal -c rustfmt,clippy && rustup default stable
       - run: cargo fmt --check
-      - run: cargo clippy --locked --all-targets -- -D warnings
-      - run: cargo test --locked
+      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - run: cargo test --locked --all-features
       - run: cargo build --locked --release
+      - run: ls -l target/release/kuaka
+  helper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container: archlinux:latest
+    steps:
+      - run: pacman -Syu --noconfirm --needed git shellcheck bash
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: bash -n dist/kuaka-helper
+      - run: shellcheck dist/kuaka-helper
+      - name: helper refuses unknown requests
+        run: |
+          set -euo pipefail
+          for line in "" "shell" "upgrade extra" "rollback" "rollback 0" "rollback -1" "rollback 1;id" "rollback 1234567890" "rollback 1 2"; do
+            read -ra argv <<< "$line"
+            set +e
+            bash dist/kuaka-helper "${argv[@]}" >/dev/null
+            code=$?
+            set -e
+            if [ "$code" -ne 2 ]; then
+              echo "helper accepted: $line ($code)"
+              exit 1
+            fi
+          done
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    container: archlinux:latest
+    steps:
+      - run: pacman -Syu --noconfirm --needed git rust gcc pkgconf fontconfig freetype2 libxkbcommon libxkbcommon-x11 wayland libglvnd libx11 libxcursor libxrandr libxi xorg-server-xvfb xorg-xauth inter-font ttf-jetbrains-mono noto-fonts curl
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: material symbols
+        run: |
+          set -euo pipefail
+          dir="$(mktemp -d)"
+          curl -fsSL -o "$dir/symbols.ttf" "https://raw.githubusercontent.com/google/material-design-icons/${SYMBOLS_COMMIT}/variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.ttf"
+          echo "${SYMBOLS_SHA256}  $dir/symbols.ttf" | sha256sum -c -
+          install -Dm644 "$dir/symbols.ttf" /usr/share/fonts/TTF/MaterialSymbolsRounded.ttf
+          fc-cache -f
+      - run: cargo build --locked --features shots
+      - name: render
+        env:
+          SLINT_BACKEND: winit-software
+        run: |
+          set -euo pipefail
+          mkdir -p shots
+          shoot() {
+            timeout 120 xvfb-run -a -s "-screen 0 1280x800x24" target/debug/kuaka --screenshot shots "$1"
+          }
+          KUAKA_THEME=dark KUAKA_LOW_END=0 KUAKA_REDUCE_MOTION=0 shoot dark
+          KUAKA_THEME=light KUAKA_LOW_END=0 KUAKA_REDUCE_MOTION=0 shoot light
+          KUAKA_THEME=dark KUAKA_LOW_END=1 shoot lowend
+          ls -l shots
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kuaka-screenshots
+          path: shots/*.png
+          if-no-files-found: error
