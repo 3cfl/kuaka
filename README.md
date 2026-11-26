@@ -2,6 +2,8 @@
 
 <p><a href="https://donate.stripe.com/8x25kFfe96fn0WL6X12wU00"><img src=".github/donate.svg" alt="Donate to Fiordland"></a> <a href="https://discord.gg/gy4ANH2Q9V"><img src=".github/discord.svg" alt="Join the Fiordland Discord"></a></p>
 
+Created by [Apollo](https://apollo44.lat) ([3cfl](https://github.com/3cfl) on GitHub, u5sk on Discord), as part of [Fiordland Linux](https://github.com/Fiordland-Linux/fiordland).
+
 The update app for [Fiordland Linux](https://fiordlandlinux.org). Shows what's waiting, updates the system and Flatpak apps in one click, and puts the system back to an earlier snapshot if an update goes wrong.
 
 - **Updates**: system packages (Fiordland, Arch, CachyOS), Flatpak apps and AUR packages, grouped and counted, with download sizes for system packages. Packages that need a restart (kernel, firmware, systemd, glibc, Mesa, NVIDIA) are marked. AUR updates open `tawaki update` in a terminal so the build scripts can be reviewed first.
