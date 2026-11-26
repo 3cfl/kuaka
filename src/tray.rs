@@ -149,6 +149,7 @@ pub fn run() -> anyhow::Result<()> {
         state: state.clone(),
         wake,
     }
+    .assume_sni_available(true)
     .spawn()
     .map_err(|e| anyhow::anyhow!("no system tray: {e}"))?;
     let mut wait = FIRST;
