@@ -1,5 +1,6 @@
 use std::ffi::OsStr;
 use std::io::Read;
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, ExitStatus, Stdio};
 use std::sync::mpsc;
@@ -37,11 +38,15 @@ fn wait_until(child: &mut Child, deadline: Instant) -> Option<ExitStatus> {
         match child.try_wait() {
             Ok(Some(status)) => return Some(status),
             Ok(None) if Instant::now() < deadline => std::thread::sleep(Duration::from_millis(100)),
-            _ => {
+            Ok(None) => {
+                // run_command gives each check its own group. checkupdates can
+                // be waiting on a second process that also holds the output pipe.
+                unsafe { libc::killpg(child.id() as libc::pid_t, libc::SIGKILL) };
                 let _ = child.kill();
                 let _ = child.wait();
                 return None;
             }
+            Err(_) => return None,
         }
     }
 }
@@ -56,6 +61,7 @@ where
 
 pub fn run_command(cmd: &mut Command, timeout: Duration) -> Option<(Option<i32>, String)> {
     let mut child = cmd
+        .process_group(0)
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()
@@ -394,6 +400,20 @@ mod tests {
         assert!(!https_url("--help"));
         assert!(!https_url("https://a b"));
         assert!(!https_url("file:///etc/passwd"));
+    }
+
+    #[test]
+    fn update_check_times_out_and_preserves_no_updates_status() {
+        assert!(run_output(
+            "/bin/sh",
+            ["-c", "sleep 5 & wait"],
+            Duration::from_millis(50)
+        )
+        .is_none());
+        assert_eq!(
+            run_output("/bin/sh", ["-c", "exit 2"], Duration::from_secs(2)),
+            Some((Some(2), String::new()))
+        );
     }
 
     #[test]
