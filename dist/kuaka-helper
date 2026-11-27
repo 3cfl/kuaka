@@ -9,21 +9,6 @@ readonly PACMAN=/usr/bin/pacman
 readonly LOCK=/var/lib/pacman/db.lck
 readonly SYNC=/var/lib/pacman/sync
 
-alpm_busy() {
-  /usr/bin/pgrep -x 'pacman|pamac-daemon|packagekitd' >/dev/null
-}
-
-clear_stale_lock() {
-  [ -f "$LOCK" ] && [ ! -L "$LOCK" ] || return 0
-  local boot mtime
-  boot=$(/usr/bin/awk '/^btime /{print $2}' /proc/stat)
-  mtime=$(/usr/bin/stat -c %Y -- "$LOCK")
-  if [ "$mtime" -lt "$boot" ] || { ! alpm_busy && /usr/bin/sleep 1 && ! alpm_busy; }; then
-    echo "removing a stale pacman lock left by an interrupted update"
-    /usr/bin/rm -f -- "$LOCK"
-  fi
-}
-
 clear_bad_signatures() {
   local f first
   shopt -s nullglob
@@ -53,7 +38,10 @@ upgrade_flags() {
 case "${1:-}" in
   upgrade)
     [ $# -eq 1 ] || exit 2
-    clear_stale_lock
+    if [[ -e $LOCK || -L $LOCK ]]; then
+      echo "Package database locked. Finish the active transaction before retrying." >&2
+      exit 1
+    fi
     clear_bad_signatures
     flags=$(upgrade_flags)
     exec "$PACMAN" "$flags" --noconfirm

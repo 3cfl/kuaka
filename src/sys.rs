@@ -51,8 +51,11 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    let mut child = command(bin)
-        .args(args)
+    run_command(command(bin).args(args), timeout)
+}
+
+pub fn run_command(cmd: &mut Command, timeout: Duration) -> Option<(Option<i32>, String)> {
+    let mut child = cmd
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()

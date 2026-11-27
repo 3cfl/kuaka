@@ -196,20 +196,8 @@ fn fallback() -> Pending {
 }
 
 fn run_checkupdates(mut c: std::process::Command) -> Option<Vec<Outdated>> {
-    use std::process::Stdio;
-    let mut child = c
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .ok()?;
-    let mut out = String::new();
-    child
-        .stdout
-        .take()?
-        .take(4 << 20)
-        .read_to_string(&mut out)
-        .ok()?;
-    match child.wait().ok()?.code() {
+    let (code, out) = sys::run_command(&mut c, CHECK_TIMEOUT)?;
+    match code {
         Some(0) => Some(parse_arrows(&out)),
         Some(2) => Some(vec![]),
         _ => None,
@@ -589,8 +577,21 @@ fn rss_items(xml: &str) -> Vec<(String, String, String, i64)> {
                 field = n;
             }
             Ok(Event::Text(t)) if inside => {
-                let s = t.unescape().map(|c| c.into_owned()).unwrap_or_default();
+                let s = t.decode().map(|c| c.into_owned()).unwrap_or_default();
                 push(&field, &s, &mut title, &mut link, &mut desc, &mut date);
+            }
+            Ok(Event::GeneralRef(r)) if inside => {
+                let value = r
+                    .resolve_char_ref()
+                    .ok()
+                    .flatten()
+                    .map(|c| c.to_string())
+                    .or_else(|| {
+                        quick_xml::escape::resolve_xml_entity(&r.decode().ok()?).map(str::to_owned)
+                    });
+                if let Some(s) = value {
+                    push(&field, &s, &mut title, &mut link, &mut desc, &mut date);
+                }
             }
             Ok(Event::CData(t)) if inside => {
                 let s = String::from_utf8_lossy(&t).into_owned();
